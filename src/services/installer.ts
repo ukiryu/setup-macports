@@ -38,7 +38,10 @@ export class MacPortsInstaller {
     core.debug(`Downloaded file size: ${stats.size} bytes`);
 
     // Copy to /tmp to ensure sudo can access it
-    const tmpPkgPath = path.join("/tmp", `macports-installer-${Date.now()}.pkg`);
+    const tmpPkgPath = path.join(
+      "/tmp",
+      `macports-installer-${Date.now()}.pkg`
+    );
     core.debug(`Copying PKG to ${tmpPkgPath} for sudo access`);
     await io.cp(pkgPath, tmpPkgPath);
 
