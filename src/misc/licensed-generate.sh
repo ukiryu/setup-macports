@@ -11,15 +11,16 @@ fi
 
 LICENSED_DIR="_temp/licensed-${VERSION}"
 LICENSED_BIN="${LICENSED_DIR}/licensed"
+DONE_FILE="${LICENSED_DIR}.${ARCH}.done"
 
-if [ ! -f "${LICENSED_DIR}.done" ]; then
+if [ ! -f "${DONE_FILE}" ]; then
   echo 'Downloading licensed...'
   mkdir -p "${LICENSED_DIR}"
   pushd "${LICENSED_DIR}"
   curl -Lfs -o licensed.tar.gz "https://github.com/github/licensed/releases/download/${VERSION}/licensed-${VERSION}-${ARCH}.tar.gz"
   tar -xzf licensed.tar.gz
   popd
-  touch "${LICENSED_DIR}.done"
+  touch "${DONE_FILE}"
 fi
 
 echo 'Running: licensed cache'
