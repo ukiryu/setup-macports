@@ -4,10 +4,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build output
+# Build output (intermediate files only)
 lib/
-dist/
 *.tsbuildinfo
+
+# NCC build cache artifacts (not needed for runtime)
+dist/*.cache
+dist/*.cache.js
 
 # Test coverage
 coverage/
