@@ -30,10 +30,8 @@ export class MacPortsInstaller {
 
     core.info("Installing MacPorts...");
 
-    // Create prefix directory
-    await io.mkdirP(settings.prefix);
-
     // Run the installer with sudo
+    // Note: The PKG installer will create /opt/local with proper permissions
     await this.execUtil.execSudo(
       "installer",
       ["-pkg", pkgPath, "-target", "/"],
@@ -44,13 +42,16 @@ export class MacPortsInstaller {
 
     core.info("MacPorts installed successfully");
 
-    // Fix ownership to current user
-    core.info("Fixing ownership...");
-    await this.execUtil.execSudo(
-      "chown",
-      ["-R", process.env.USER || "nobody", settings.prefix],
-      { silent: true }
-    );
+    // Fix ownership to current user (non-critical, may fail on some runners)
+    const username = process.env.USER || process.env.USERNAME || "runner";
+    core.debug(`Fixing ownership to ${username}...`);
+    try {
+      await this.execUtil.execSudo("chown", ["-R", username, settings.prefix], {
+        silent: true,
+      });
+    } catch (err) {
+      core.warning(`Failed to fix ownership: ${(err as any)?.message ?? err}`);
+    }
 
     // Clean up downloaded PKG
     core.debug(`Cleaning up: ${pkgPath}`);
