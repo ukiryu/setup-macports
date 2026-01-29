@@ -8,10 +8,6 @@ yarn-error.log*
 lib/
 *.tsbuildinfo
 
-# NCC build cache artifacts (not needed for runtime)
-dist/*.cache
-dist/*.cache.js
-
 # Test coverage
 coverage/
 .nyc_output/
