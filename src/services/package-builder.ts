@@ -57,8 +57,8 @@ export class PackageBuilder {
       );
     }
 
-    // Build the filename: MacPorts-{version}-{os_version}-{os_name}-{arch}.pkg
-    const filename = `MacPorts-${settings.version}-${versionInfo.pkgVersion}-${versionInfo.name}-${platform.architecture}.pkg`;
+    // Build the filename: MacPorts-{version}-{os_version}-{os_name}.pkg
+    const filename = `MacPorts-${settings.version}-${versionInfo.pkgVersion}-${versionInfo.name}.pkg`;
 
     return `https://github.com/macports/macports-base/releases/download/v${settings.version}/${filename}`;
   }

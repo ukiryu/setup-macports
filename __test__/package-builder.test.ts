@@ -40,7 +40,7 @@ describe("PackageBuilder", () => {
       const url = builder.buildUrl(settings, platform);
 
       expect(url).toBe(
-        "https://github.com/macports/macports-base/releases/download/v2.11.5/MacPorts-2.11.5-15-Sequoia-arm64.pkg"
+        "https://github.com/macports/macports-base/releases/download/v2.11.5/MacPorts-2.11.5-15-Sequoia.pkg"
       );
     });
 
@@ -51,7 +51,7 @@ describe("PackageBuilder", () => {
       const url = builder.buildUrl(settings, platform);
 
       expect(url).toBe(
-        "https://github.com/macports/macports-base/releases/download/v2.10.0/MacPorts-2.10.0-14-Sonoma-x86_64.pkg"
+        "https://github.com/macports/macports-base/releases/download/v2.10.0/MacPorts-2.10.0-14-Sonoma.pkg"
       );
     });
 
@@ -62,7 +62,7 @@ describe("PackageBuilder", () => {
       const url = builder.buildUrl(settings, platform);
 
       expect(url).toBe(
-        "https://github.com/macports/macports-base/releases/download/v2.12.0/MacPorts-2.12.0-26-Tahoe-arm64.pkg"
+        "https://github.com/macports/macports-base/releases/download/v2.12.0/MacPorts-2.12.0-26-Tahoe.pkg"
       );
     });
 
