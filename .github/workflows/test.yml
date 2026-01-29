@@ -150,10 +150,12 @@ jobs:
 
       - name: Verify variants
         run: |
+          set -x
           cat /opt/local/etc/macports/variants.conf
-          grep -Fq '+aqua' /opt/local/etc/macports/variants.conf
-          grep -Fq '+metal' /opt/local/etc/macports/variants.conf
-          grep -Fq '-x11' /opt/local/etc/macports/variants.conf
+          # Check each variant exists in the file
+          grep '+aqua' /opt/local/etc/macports/variants.conf || exit 1
+          grep '+metal' /opt/local/etc/macports/variants.conf || exit 1
+          grep '-x11' /opt/local/etc/macports/variants.conf || exit 1
           echo "✅ Variants configured correctly"
 
       - name: Test git sources
