@@ -130,7 +130,7 @@ jobs:
           echo "macos_name=$(sw_vers -productName)" >> $GITHUB_OUTPUT
 
       - name: Test basic installation
-        uses: ./dist
+        uses: ./
         with:
           macports-version: '2.11.5'
           debug: 'true'
