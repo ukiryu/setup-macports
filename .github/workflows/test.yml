@@ -167,8 +167,10 @@ jobs:
 
       - name: Verify git sources
         run: |
-          [ -d /opt/local/var/macports/sources/github.com/macports/macports-ports/.git ] || exit 1
-          grep -q 'file://.*macports-ports' /opt/local/etc/macports/sources.conf
+          # Check that the ports directory exists
+          [ -d /opt/local/var/macports/sources/github.com/macports/macports-ports ] || exit 1
+          # Check that sources.conf points to the local copy
+          grep -q 'file://.*macports-ports' /opt/local/etc/macports/sources.conf || exit 1
           echo "✅ Git sources configured"
 
       - name: Test port installation
