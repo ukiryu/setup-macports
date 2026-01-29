@@ -63,6 +63,15 @@ inputs:
     default: 'true'
     required: false
 
+  cache:
+    description: >-
+      Cache MacPorts installation directory for faster subsequent runs.
+      Uses actions/cache internally with automatic cache key generation.
+      Set to 'true' to enable caching.
+      Default: false
+    default: 'false'
+    required: false
+
   debug:
     description: 'Enable debug logging for troubleshooting'
     default: 'false'
@@ -84,6 +93,14 @@ outputs:
   cache-key:
     description: 'Cache key for this installation'
     value: ${{ steps.setup-macports.outputs.cache-key }}
+
+  cache-hit:
+    description: 'Whether the cache was hit (only when cache: true)'
+    value: ${{ steps.setup-macports.outputs.cache-hit }}
+
+  uses-git-sources:
+    description: 'Whether git sources were configured (only when use-git-sources: true)'
+    value: ${{ steps.setup-macports.outputs.uses-git-sources }}
 
 runs:
   using: 'node20'

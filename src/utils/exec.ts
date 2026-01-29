@@ -1,5 +1,5 @@
-import * as core from "@actions/core";
-import * as exec from "@actions/exec";
+import * as core from '@actions/core'
+import * as exec from '@actions/exec'
 
 /**
  * Options for command execution
@@ -8,12 +8,12 @@ export interface IExecOptions {
   /**
    * Whether to ignore non-zero exit codes
    */
-  ignoreReturnCode?: boolean;
+  ignoreReturnCode?: boolean
 
   /**
    * Whether to run command silently (no output to console)
    */
-  silent?: boolean;
+  silent?: boolean
 }
 
 /**
@@ -23,17 +23,17 @@ export interface IExecResult {
   /**
    * Exit code (0 for success)
    */
-  exitCode: number;
+  exitCode: number
 
   /**
    * Standard output
    */
-  stdout: string;
+  stdout: string
 
   /**
    * Standard error
    */
-  stderr: string;
+  stderr: string
 }
 
 /**
@@ -44,12 +44,12 @@ export interface IExecUtil {
     command: string,
     args?: string[],
     options?: IExecOptions
-  ): Promise<IExecResult>;
+  ): Promise<IExecResult>
   execSudo(
     command: string,
     args?: string[],
     options?: IExecOptions
-  ): Promise<IExecResult>;
+  ): Promise<IExecResult>
 }
 
 /**
@@ -71,47 +71,43 @@ export class ExecUtil implements IExecUtil {
     args: string[] = [],
     options: IExecOptions = {}
   ): Promise<IExecResult> {
-    const {
-      silent = false,
-      ignoreReturnCode = false,
-      ...execOptions
-    } = options;
+    const {silent = false, ignoreReturnCode = false, ...execOptions} = options
 
-    core.debug(`Executing: ${command} ${args.join(" ")}`);
+    core.debug(`Executing: ${command} ${args.join(' ')}`)
 
-    let stdout = "";
-    let stderr = "";
+    let stdout = ''
+    let stderr = ''
 
     const listeners: exec.ExecListeners = {
       stdout: (data: Buffer) => {
-        const text = data.toString();
-        stdout += text;
+        const text = data.toString()
+        stdout += text
         if (!silent) {
-          core.info(text.trim());
+          core.info(text.trim())
         }
       },
       stderr: (data: Buffer) => {
-        const text = data.toString();
-        stderr += text;
+        const text = data.toString()
+        stderr += text
         if (!silent) {
-          core.error(text.trim());
+          core.error(text.trim())
         }
-      },
-    };
+      }
+    }
 
     try {
       const exitCode = await exec.exec(command, args, {
         ...execOptions,
         silent,
         ignoreReturnCode,
-        listeners,
-      });
+        listeners
+      })
 
-      return { exitCode: exitCode || 0, stdout, stderr };
+      return {exitCode: exitCode || 0, stdout, stderr}
     } catch (err) {
-      const error = err as any;
-      core.debug(`Command failed: ${error.message}`);
-      return { exitCode: error.exitCode || 1, stdout, stderr };
+      const error = err as any
+      core.debug(`Command failed: ${error.message}`)
+      return {exitCode: error.exitCode || 1, stdout, stderr}
     }
   }
 
@@ -129,7 +125,7 @@ export class ExecUtil implements IExecUtil {
     options: IExecOptions = {}
   ): Promise<IExecResult> {
     // Use -n flag for non-interactive mode (fails if password required)
-    return this.exec("sudo", ["-n", command, ...args], options);
+    return this.exec('sudo', ['-n', command, ...args], options)
   }
 
   /**
@@ -148,15 +144,15 @@ export class ExecUtil implements IExecUtil {
   ): Promise<string> {
     const result = await this.exec(command, args, {
       ...options,
-      silent: true,
-    });
+      silent: true
+    })
 
     if (result.exitCode !== 0) {
       throw new Error(
         `Command failed with exit code ${result.exitCode}: ${result.stderr || result.stdout}`
-      );
+      )
     }
 
-    return result.stdout.trim();
+    return result.stdout.trim()
   }
 }

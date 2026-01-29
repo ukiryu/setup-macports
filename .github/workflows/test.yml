@@ -3,8 +3,10 @@ name: Test
 on:
   push:
     branches: [main, master]
+    paths-ignore: '**.md'
   pull_request:
     branches: [main, master]
+    paths-ignore: '**.md'
   schedule:
     - cron: '30 3 * * 4'  # Weekly on Thursday
   workflow_dispatch:

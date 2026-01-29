@@ -1,10 +1,10 @@
-import * as core from "@actions/core";
-import * as tc from "@actions/tool-cache";
-import * as io from "@actions/io";
-import * as fs from "fs";
-import * as path from "path";
-import type { IMacPortsSettings } from "../models/settings";
-import type { IExecUtil } from "../utils/exec";
+import * as core from '@actions/core'
+import * as tc from '@actions/tool-cache'
+import * as io from '@actions/io'
+import * as fs from 'fs'
+import * as path from 'path'
+import type {IMacPortsSettings} from '../models/settings'
+import type {IExecUtil} from '../utils/exec'
 
 /**
  * MacPorts Installer Service
@@ -24,62 +24,59 @@ export class MacPortsInstaller {
     settings: IMacPortsSettings,
     packageUrl: string
   ): Promise<void> {
-    core.info("Downloading MacPorts installer...");
+    core.info('Downloading MacPorts installer...')
 
     // Download the PKG
-    const pkgPath = await tc.downloadTool(packageUrl);
-    core.info(`Downloaded to: ${pkgPath}`);
+    const pkgPath = await tc.downloadTool(packageUrl)
+    core.info(`Downloaded to: ${pkgPath}`)
 
     // Verify the file exists and is readable
     if (!fs.existsSync(pkgPath)) {
-      throw new Error(`Downloaded file not found: ${pkgPath}`);
+      throw new Error(`Downloaded file not found: ${pkgPath}`)
     }
-    const stats = fs.statSync(pkgPath);
-    core.debug(`Downloaded file size: ${stats.size} bytes`);
+    const stats = fs.statSync(pkgPath)
+    core.debug(`Downloaded file size: ${stats.size} bytes`)
 
     // Copy to /tmp to ensure sudo can access it
-    const tmpPkgPath = path.join(
-      "/tmp",
-      `macports-installer-${Date.now()}.pkg`
-    );
-    core.debug(`Copying PKG to ${tmpPkgPath} for sudo access`);
-    await io.cp(pkgPath, tmpPkgPath);
+    const tmpPkgPath = path.join('/tmp', `macports-installer-${Date.now()}.pkg`)
+    core.debug(`Copying PKG to ${tmpPkgPath} for sudo access`)
+    await io.cp(pkgPath, tmpPkgPath)
 
-    core.info("Installing MacPorts...");
+    core.info('Installing MacPorts...')
 
     // Run the installer with sudo
     // Note: The PKG installer will create /opt/local with proper permissions
     const result = await this.execUtil.execSudo(
-      "installer",
-      ["-pkg", tmpPkgPath, "-target", "/"],
+      'installer',
+      ['-pkg', tmpPkgPath, '-target', '/'],
       {
-        silent: false,
+        silent: false
       }
-    );
+    )
 
     if (result.exitCode !== 0) {
       throw new Error(
         `installer failed with exit code ${result.exitCode}: ${result.stderr || result.stdout}`
-      );
+      )
     }
 
-    core.info("MacPorts installed successfully");
+    core.info('MacPorts installed successfully')
 
     // Fix ownership to current user (non-critical, may fail on some runners)
-    const username = process.env.USER || process.env.USERNAME || "runner";
-    core.debug(`Fixing ownership to ${username}...`);
+    const username = process.env.USER || process.env.USERNAME || 'runner'
+    core.debug(`Fixing ownership to ${username}...`)
     try {
-      await this.execUtil.execSudo("chown", ["-R", username, settings.prefix], {
-        silent: true,
-      });
+      await this.execUtil.execSudo('chown', ['-R', username, settings.prefix], {
+        silent: true
+      })
     } catch (err) {
-      core.warning(`Failed to fix ownership: ${(err as any)?.message ?? err}`);
+      core.warning(`Failed to fix ownership: ${(err as any)?.message ?? err}`)
     }
 
     // Clean up downloaded PKG files
-    core.debug(`Cleaning up: ${pkgPath}`);
-    await io.rmRF(pkgPath);
-    core.debug(`Cleaning up: ${tmpPkgPath}`);
-    await io.rmRF(tmpPkgPath);
+    core.debug(`Cleaning up: ${pkgPath}`)
+    await io.rmRF(pkgPath)
+    core.debug(`Cleaning up: ${tmpPkgPath}`)
+    await io.rmRF(tmpPkgPath)
   }
 }

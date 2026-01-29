@@ -5,52 +5,57 @@ export interface IMacPortsSettings {
   /**
    * MacPorts version to install
    */
-  version: string;
+  version: string
 
   /**
    * Installation prefix path
    */
-  prefix: string;
+  prefix: string
 
   /**
    * Variant configuration
    */
-  variants: IVariantConfig;
+  variants: IVariantConfig
 
   /**
    * Custom sources URLs
    */
-  sources: string[];
+  sources: string[]
 
   /**
    * Ports to install
    */
-  ports: IPortConfig[];
+  ports: IPortConfig[]
 
   /**
    * Use git sources from GitHub API
    */
-  useGitSources: boolean;
+  useGitSources: boolean
 
   /**
    * Add MacPorts to PATH
    */
-  prependPath: boolean;
+  prependPath: boolean
 
   /**
    * Enable verbose output
    */
-  verbose: boolean;
+  verbose: boolean
 
   /**
    * Verify package signatures
    */
-  signatureCheck: boolean;
+  signatureCheck: boolean
 
   /**
    * Enable debug logging
    */
-  debug: boolean;
+  debug: boolean
+
+  /**
+   * Enable caching of MacPorts installation
+   */
+  cache: boolean
 }
 
 /**
@@ -60,12 +65,12 @@ export interface IVariantConfig {
   /**
    * Selected variants (with + prefix)
    */
-  select: string[];
+  select: string[]
 
   /**
    * Deselected variants (with - prefix)
    */
-  deselect: string[];
+  deselect: string[]
 }
 
 /**
@@ -75,10 +80,10 @@ export interface IPortConfig {
   /**
    * Port name
    */
-  name: string;
+  name: string
 
   /**
    * Variants for this port (e.g., "+tcl +universal -java")
    */
-  variants?: string;
+  variants?: string
 }

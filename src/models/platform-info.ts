@@ -5,17 +5,17 @@ export interface IPlatformInfo {
   /**
    * macOS version name (e.g., "Sequoia", "Sonoma")
    */
-  version: string;
+  version: string
 
   /**
    * macOS version number (e.g., "15.0", "14.5")
    */
-  versionNumber: string;
+  versionNumber: string
 
   /**
    * CPU architecture (arm64, x86_64)
    */
-  architecture: string;
+  architecture: string
 }
 
 /**
@@ -25,5 +25,5 @@ export interface IPlatformDetector {
   /**
    * Detect platform information
    */
-  detect(): Promise<IPlatformInfo>;
+  detect(): Promise<IPlatformInfo>
 }
