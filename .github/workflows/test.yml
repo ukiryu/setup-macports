@@ -143,7 +143,7 @@ jobs:
           echo "✅ Port binary exists and is executable"
 
       - name: Test with variants
-        uses: ./dist
+        uses: ./
         with:
           macports-version: '2.11.5'
           variants: '+aqua +metal -x11'
@@ -157,7 +157,7 @@ jobs:
           echo "✅ Variants configured correctly"
 
       - name: Test git sources
-        uses: ./dist
+        uses: ./
         with:
           macports-version: '2.11.5'
           use-git-sources: 'true'
@@ -169,7 +169,7 @@ jobs:
           echo "✅ Git sources configured"
 
       - name: Test port installation
-        uses: ./dist
+        uses: ./
         with:
           macports-version: '2.11.5'
           install-ports: 'git-lfs'
