@@ -153,9 +153,10 @@ jobs:
           set -x
           cat /opt/local/etc/macports/variants.conf
           # Check each variant exists in the file
-          grep '+aqua' /opt/local/etc/macports/variants.conf || exit 1
-          grep '+metal' /opt/local/etc/macports/variants.conf || exit 1
-          grep '-x11' /opt/local/etc/macports/variants.conf || exit 1
+          # Use -e flag for patterns starting with -
+          grep -e '+aqua' /opt/local/etc/macports/variants.conf || exit 1
+          grep -e '+metal' /opt/local/etc/macports/variants.conf || exit 1
+          grep -e '-x11' /opt/local/etc/macports/variants.conf || exit 1
           echo "✅ Variants configured correctly"
 
       - name: Test git sources
