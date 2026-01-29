@@ -1,5 +1,5 @@
-import type { IMacPortsSettings } from '../models/settings';
-import type { IPlatformInfo } from '../models/platform-info';
+import type { IMacPortsSettings } from "../models/settings";
+import type { IPlatformInfo } from "../models/platform-info";
 
 /**
  * Known macOS versions mapping for PKG filename construction
@@ -11,17 +11,17 @@ interface IPkgVersionInfo {
 }
 
 const MACOS_PKG_VERSIONS: Record<string, IPkgVersionInfo> = {
-  '10.10': { name: 'Yosemite', pkgVersion: '10.10' },
-  '10.11': { name: 'ElCapitan', pkgVersion: '10.11' },
-  '10.12': { name: 'Sierra', pkgVersion: '10.12' },
-  '10.13': { name: 'HighSierra', pkgVersion: '10.13' },
-  '10.14': { name: 'Mojave', pkgVersion: '10.14' },
-  '10.15': { name: 'Catalina', pkgVersion: '10.15' },
-  '11': { name: 'BigSur', pkgVersion: '11' },
-  '12': { name: 'Monterey', pkgVersion: '12' },
-  '14': { name: 'Sonoma', pkgVersion: '14' },
-  '15': { name: 'Sequoia', pkgVersion: '15' },
-  '26': { name: 'Tahoe', pkgVersion: '26' }
+  "10.10": { name: "Yosemite", pkgVersion: "10.10" },
+  "10.11": { name: "ElCapitan", pkgVersion: "10.11" },
+  "10.12": { name: "Sierra", pkgVersion: "10.12" },
+  "10.13": { name: "HighSierra", pkgVersion: "10.13" },
+  "10.14": { name: "Mojave", pkgVersion: "10.14" },
+  "10.15": { name: "Catalina", pkgVersion: "10.15" },
+  "11": { name: "BigSur", pkgVersion: "11" },
+  "12": { name: "Monterey", pkgVersion: "12" },
+  "14": { name: "Sonoma", pkgVersion: "14" },
+  "15": { name: "Sequoia", pkgVersion: "15" },
+  "26": { name: "Tahoe", pkgVersion: "26" },
 };
 
 /**
@@ -53,7 +53,7 @@ export class PackageBuilder {
     if (!versionInfo) {
       throw new Error(
         `Unsupported macOS version: ${majorVersion}. ` +
-          `Supported versions: ${Object.keys(MACOS_PKG_VERSIONS).join(', ')}`
+          `Supported versions: ${Object.keys(MACOS_PKG_VERSIONS).join(", ")}`
       );
     }
 

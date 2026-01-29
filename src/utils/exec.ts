@@ -1,5 +1,5 @@
-import * as core from '@actions/core';
-import * as exec from '@actions/exec';
+import * as core from "@actions/core";
+import * as exec from "@actions/exec";
 
 /**
  * Options for command execution
@@ -40,8 +40,16 @@ export interface IExecResult {
  * Execution Utility Interface
  */
 export interface IExecUtil {
-  exec(command: string, args?: string[], options?: IExecOptions): Promise<IExecResult>;
-  execSudo(command: string, args?: string[], options?: IExecOptions): Promise<IExecResult>;
+  exec(
+    command: string,
+    args?: string[],
+    options?: IExecOptions
+  ): Promise<IExecResult>;
+  execSudo(
+    command: string,
+    args?: string[],
+    options?: IExecOptions
+  ): Promise<IExecResult>;
 }
 
 /**
@@ -63,12 +71,16 @@ export class ExecUtil implements IExecUtil {
     args: string[] = [],
     options: IExecOptions = {}
   ): Promise<IExecResult> {
-    const { silent = false, ignoreReturnCode = false, ...execOptions } = options;
+    const {
+      silent = false,
+      ignoreReturnCode = false,
+      ...execOptions
+    } = options;
 
-    core.debug(`Executing: ${command} ${args.join(' ')}`);
+    core.debug(`Executing: ${command} ${args.join(" ")}`);
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
     const listeners: exec.ExecListeners = {
       stdout: (data: Buffer) => {
@@ -84,7 +96,7 @@ export class ExecUtil implements IExecUtil {
         if (!silent) {
           core.error(text.trim());
         }
-      }
+      },
     };
 
     try {
@@ -92,7 +104,7 @@ export class ExecUtil implements IExecUtil {
         ...execOptions,
         silent,
         ignoreReturnCode,
-        listeners
+        listeners,
       });
 
       return { exitCode: exitCode || 0, stdout, stderr };
@@ -117,7 +129,7 @@ export class ExecUtil implements IExecUtil {
     options: IExecOptions = {}
   ): Promise<IExecResult> {
     // Use -n flag for non-interactive mode (fails if password required)
-    return this.exec('sudo', ['-n', command, ...args], options);
+    return this.exec("sudo", ["-n", command, ...args], options);
   }
 
   /**
@@ -136,7 +148,7 @@ export class ExecUtil implements IExecUtil {
   ): Promise<string> {
     const result = await this.exec(command, args, {
       ...options,
-      silent: true
+      silent: true,
     });
 
     if (result.exitCode !== 0) {

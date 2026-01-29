@@ -1,9 +1,9 @@
-import * as core from '@actions/core';
+import * as core from "@actions/core";
 import type {
   IMacPortsSettings,
   IVariantConfig,
-  IPortConfig
-} from './models/settings';
+  IPortConfig,
+} from "./models/settings";
 
 /**
  * Parse a boolean input from GitHub Actions
@@ -14,7 +14,7 @@ import type {
  */
 export function parseBooleanInput(input: string): boolean {
   const value = input.trim().toLowerCase();
-  return value === 'true' || value === '1' || value === 'yes';
+  return value === "true" || value === "1" || value === "yes";
 }
 
 /**
@@ -27,7 +27,7 @@ export function parseBooleanInput(input: string): boolean {
 export function parseVariantsInput(input: string): IVariantConfig {
   const variants: IVariantConfig = { select: [], deselect: [] };
 
-  if (!input || input.trim() === '') {
+  if (!input || input.trim() === "") {
     return variants;
   }
 
@@ -36,9 +36,9 @@ export function parseVariantsInput(input: string): IVariantConfig {
   for (const part of parts) {
     if (!part) continue;
 
-    if (part.startsWith('+')) {
+    if (part.startsWith("+")) {
       variants.select.push(part.slice(1));
-    } else if (part.startsWith('-')) {
+    } else if (part.startsWith("-")) {
       variants.deselect.push(part.slice(1));
     } else {
       throw new Error(
@@ -58,14 +58,14 @@ export function parseVariantsInput(input: string): IVariantConfig {
  * @returns Array of source URLs
  */
 export function parseSourcesInput(input: string): string[] {
-  if (!input || input.trim() === '') {
+  if (!input || input.trim() === "") {
     return [];
   }
 
   return input
-    .split('\n')
+    .split("\n")
     .map(line => line.trim())
-    .filter(line => line !== '');
+    .filter(line => line !== "");
 }
 
 /**
@@ -78,20 +78,20 @@ export function parseSourcesInput(input: string): string[] {
  * @returns Array of port configurations
  */
 export function parseInstallPortsInput(input: string): IPortConfig[] {
-  if (!input || input.trim() === '') {
+  if (!input || input.trim() === "") {
     return [];
   }
 
   const trimmed = input.trim();
 
   // Try JSON first
-  if (trimmed.startsWith('[')) {
+  if (trimmed.startsWith("[")) {
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed)) {
         return parsed.map((port: any) => ({
           name: port.name,
-          variants: port.variants
+          variants: port.variants,
         }));
       }
     } catch (err) {
@@ -103,7 +103,7 @@ export function parseInstallPortsInput(input: string): IPortConfig[] {
   // Space-separated list
   return trimmed
     .split(/\s+/)
-    .filter(name => name !== '')
+    .filter(name => name !== "")
     .map(name => ({ name }));
 }
 
@@ -113,24 +113,24 @@ export function parseInstallPortsInput(input: string): IPortConfig[] {
  * @returns Promise resolving to complete MacPorts settings
  */
 export async function getInputs(): Promise<IMacPortsSettings> {
-  const version = core.getInput('macports-version');
-  const prefix = core.getInput('installation-prefix');
-  const variantsInput = core.getInput('variants');
-  const sourcesInput = core.getInput('sources');
-  const useGitSourcesInput = core.getInput('use-git-sources');
-  const installPortsInput = core.getInput('install-ports');
-  const prependPathInput = core.getInput('prepend-path');
-  const verboseInput = core.getInput('verbose');
-  const signatureCheckInput = core.getInput('signature-check');
-  const debugInput = core.getInput('debug');
+  const version = core.getInput("macports-version");
+  const prefix = core.getInput("installation-prefix");
+  const variantsInput = core.getInput("variants");
+  const sourcesInput = core.getInput("sources");
+  const useGitSourcesInput = core.getInput("use-git-sources");
+  const installPortsInput = core.getInput("install-ports");
+  const prependPathInput = core.getInput("prepend-path");
+  const verboseInput = core.getInput("verbose");
+  const signatureCheckInput = core.getInput("signature-check");
+  const debugInput = core.getInput("debug");
 
   // Validate required inputs
   if (!version) {
-    throw new Error('macports-version is required');
+    throw new Error("macports-version is required");
   }
 
   if (!prefix) {
-    throw new Error('installation-prefix is required');
+    throw new Error("installation-prefix is required");
   }
 
   // Parse variants
@@ -159,6 +159,6 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     prependPath,
     verbose,
     signatureCheck,
-    debug
+    debug,
   };
 }

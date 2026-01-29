@@ -1,7 +1,7 @@
-import type { IPlatformInfo } from './platform-info';
+import type { IPlatformInfo } from "./platform-info";
 
 // Re-export IPlatformInfo for convenience
-export type { IPlatformInfo } from './platform-info';
+export type { IPlatformInfo } from "./platform-info";
 
 /**
  * MacPorts installation information

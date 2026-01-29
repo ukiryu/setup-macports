@@ -1,8 +1,8 @@
-import * as path from 'path';
-import * as core from '@actions/core';
-import * as tc from '@actions/tool-cache';
-import * as io from '@actions/io';
-import type { IExecUtil } from '../utils/exec';
+import * as path from "path";
+import * as core from "@actions/core";
+import * as tc from "@actions/tool-cache";
+import * as io from "@actions/io";
+import type { IExecUtil } from "../utils/exec";
 
 /**
  * Sources Fetcher Service
@@ -21,9 +21,9 @@ export class SourcesFetcher {
    * @param ref - Git ref to fetch (default: 'master')
    * @returns Path to the extracted repository
    */
-  async fetch(targetDir: string, ref: string = 'master'): Promise<string> {
-    const owner = 'macports';
-    const repo = 'macports-ports';
+  async fetch(targetDir: string, ref: string = "master"): Promise<string> {
+    const owner = "macports";
+    const repo = "macports-ports";
 
     core.info(`Fetching ${owner}/${repo} from GitHub...`);
 
@@ -41,7 +41,7 @@ export class SourcesFetcher {
 
       // The extracted directory will be named like 'macports-ports-master'
       // Find the actual extracted directory by checking for entries starting with the repo name
-      const fs = await import('fs/promises');
+      const fs = await import("fs/promises");
       const entries = await fs.readdir(tempDir);
       const extractedDir = entries.find(e => e.startsWith(`${repo}-`));
 
@@ -85,12 +85,15 @@ export class SourcesFetcher {
    * @param portsPath - Path to the ports directory
    * @param portBinary - Path to the port command
    */
-  async initializePortIndex(portsPath: string, portBinary: string): Promise<void> {
+  async initializePortIndex(
+    portsPath: string,
+    portBinary: string
+  ): Promise<void> {
     core.info(`Initializing PortIndex for ${portsPath}...`);
 
     try {
-      await this.execUtil.exec(portBinary, ['index', portsPath], {
-        silent: false
+      await this.execUtil.exec(portBinary, ["index", portsPath], {
+        silent: false,
       });
 
       core.info(`PortIndex initialized successfully`);

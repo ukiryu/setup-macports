@@ -1,25 +1,25 @@
-import * as core from '@actions/core';
+import * as core from "@actions/core";
 
 /**
  * State constants for persisting data between main and post execution
  */
-export const STATE_IS_POST = 'isPost';
-export const STATE_INSTALLATION_PREFIX = 'installationPrefix';
-export const STATE_CACHE_KEY = 'cacheKey';
-export const STATE_MACPORTS_VERSION = 'macportsVersion';
+export const STATE_IS_POST = "isPost";
+export const STATE_INSTALLATION_PREFIX = "installationPrefix";
+export const STATE_CACHE_KEY = "cacheKey";
+export const STATE_MACPORTS_VERSION = "macportsVersion";
 
 /**
  * Set the post execution state flag
  */
 export function setIsPost(): void {
-  core.saveState(STATE_IS_POST, 'true');
+  core.saveState(STATE_IS_POST, "true");
 }
 
 /**
  * Check if we're in post execution
  */
 export function isPost(): boolean {
-  return core.getState(STATE_IS_POST) === 'true';
+  return core.getState(STATE_IS_POST) === "true";
 }
 
 /**

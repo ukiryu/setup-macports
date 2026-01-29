@@ -1,7 +1,7 @@
-import * as crypto from 'crypto';
-import * as core from '@actions/core';
-import type { IMacPortsSettings } from '../models/settings';
-import type { IPlatformInfo } from '../models/platform-info';
+import * as crypto from "crypto";
+import * as core from "@actions/core";
+import type { IMacPortsSettings } from "../models/settings";
+import type { IPlatformInfo } from "../models/platform-info";
 
 /**
  * Cache Utility Class
@@ -33,9 +33,9 @@ export class CacheUtil {
       version: settings.version,
       variants: {
         select: settings.variants.select.sort(),
-        deselect: settings.variants.deselect.sort()
+        deselect: settings.variants.deselect.sort(),
       },
-      sources: settings.sources.sort()
+      sources: settings.sources.sort(),
     };
 
     const configString = JSON.stringify(configData);
@@ -44,9 +44,9 @@ export class CacheUtil {
 
     // Use RIPEMD160 to match the shell implementation
     const hash = crypto
-      .createHash('ripemd160')
+      .createHash("ripemd160")
       .update(configString)
-      .digest('hex');
+      .digest("hex");
 
     // Cache key format: macports-{macos}-{arch}-v2-{hash}
     // v2 is the cache version - bump if installation format changes
