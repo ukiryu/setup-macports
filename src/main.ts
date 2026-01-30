@@ -73,6 +73,9 @@ async function run(): Promise<void> {
       const cacheUtil = new CacheUtil()
       const {cacheKey} = cacheUtil.generateImprovedCacheKey(settings, platform)
 
+      // Set cache-hit output to false for fresh installs
+      core.setOutput('cache-hit', 'false')
+
       try {
         await cache.saveCache([settings.prefix], cacheKey)
         core.info(`Cache saved with key: ${cacheKey}`)

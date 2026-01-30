@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import * as fs from 'fs/promises'
 import * as path from 'path'
 import type {
   IMacPortsSettings,
@@ -6,6 +7,7 @@ import type {
   IPortConfig
 } from '../models/settings'
 import type {IMacPortsInstallInfo, IPlatformInfo} from '../models/install-info'
+import type {IConfigurationInfo} from '../models/configuration-info'
 import type {IPlatformDetector} from '../models/platform-info'
 import type {IExecUtil} from '../utils/exec'
 import {PlatformDetector} from '../services/platform-detector'
@@ -26,7 +28,7 @@ import {
 /**
  * Re-export types for convenience
  */
-export type {IPlatformInfo, IMacPortsInstallInfo}
+export type {IPlatformInfo, IMacPortsInstallInfo, IConfigurationInfo}
 export type {IVariantConfig, IPortConfig}
 
 /**
@@ -46,6 +48,7 @@ export class MacPortsProvider {
   private readonly cacheUtil: CacheUtil
 
   private installInfo: Partial<IMacPortsInstallInfo> = {}
+  private configInfo: Partial<IConfigurationInfo> = {}
 
   constructor(private settings: IMacPortsSettings) {
     // Initialize all services (dependency injection)
@@ -130,7 +133,7 @@ export class MacPortsProvider {
     setIsPost()
 
     // Set outputs
-    this.setOutputs()
+    await this.setOutputs()
 
     return this.installInfo as IMacPortsInstallInfo
   }
@@ -167,17 +170,102 @@ export class MacPortsProvider {
   }
 
   /**
+   * Gather configuration information after setup
+   */
+  private async gatherConfigurationInfo(): Promise<void> {
+    const etcDir = path.join(this.settings.prefix, 'etc', 'macports')
+
+    // Configuration file paths
+    this.configInfo.variantsConfPath = path.join(etcDir, 'variants.conf')
+    this.configInfo.sourcesConfPath = path.join(etcDir, 'sources.conf')
+    this.configInfo.portsConfPath = path.join(etcDir, 'ports.conf')
+    this.configInfo.macportsConfPath = path.join(etcDir, 'macports.conf')
+
+    // Read variants.conf content
+    try {
+      const variantsContent = await fs.readFile(
+        this.configInfo.variantsConfPath,
+        'utf8'
+      )
+      this.configInfo.configuredVariants = variantsContent.trim()
+    } catch {
+      this.configInfo.configuredVariants = ''
+    }
+
+    // Read sources.conf content
+    try {
+      const sourcesContent = await fs.readFile(
+        this.configInfo.sourcesConfPath,
+        'utf8'
+      )
+      this.configInfo.configuredSources = sourcesContent.trim()
+    } catch {
+      this.configInfo.configuredSources = ''
+    }
+
+    // Git source path (if using git sources)
+    if (this.installInfo.usesGitSources) {
+      this.configInfo.gitSourcePath = path.join(
+        this.settings.prefix,
+        'var',
+        'macports',
+        'sources',
+        'github.com',
+        'macports',
+        'macports-ports'
+      )
+    }
+
+    // Rsync source URL (if using rsync sources)
+    if (!this.installInfo.usesGitSources) {
+      // Extract rsync URL from sources content
+      const lines = this.configInfo.configuredSources.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('rsync://')) {
+          this.configInfo.rsyncSourceUrls = line.split(' ')[0]
+          break
+        }
+      }
+    }
+  }
+
+  /**
    * Set GitHub Actions outputs
    */
-  private setOutputs(): void {
+  private async setOutputs(): Promise<void> {
+    // Gather configuration info
+    await this.gatherConfigurationInfo()
+
+    // Basic outputs
     core.setOutput('version', this.settings.version)
     core.setOutput('prefix', this.settings.prefix)
     core.setOutput('package-url', this.installInfo.packageUrl || '')
     core.setOutput('cache-key', this.installInfo.cacheKey || '')
 
+    // Git sources output
     if (this.installInfo.usesGitSources) {
       core.setOutput('uses-git-sources', 'true')
     }
+
+    // Configuration paths
+    core.setOutput('variants-conf-path', this.configInfo.variantsConfPath || '')
+    core.setOutput('sources-conf-path', this.configInfo.sourcesConfPath || '')
+    core.setOutput('ports-conf-path', this.configInfo.portsConfPath || '')
+    core.setOutput('macports-conf-path', this.configInfo.macportsConfPath || '')
+
+    // Configuration values
+    core.setOutput(
+      'configured-variants',
+      this.configInfo.configuredVariants || ''
+    )
+    core.setOutput(
+      'configured-sources',
+      this.configInfo.configuredSources || ''
+    )
+
+    // Source locations
+    core.setOutput('git-source-path', this.configInfo.gitSourcePath || '')
+    core.setOutput('rsync-source-urls', this.configInfo.rsyncSourceUrls || '')
   }
 }
 

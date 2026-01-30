@@ -102,6 +102,38 @@ outputs:
     description: 'Whether git sources were configured (only when use-git-sources: true)'
     value: ${{ steps.setup-macports.outputs.uses-git-sources }}
 
+  variants-conf-path:
+    description: 'Path to the variants.conf file'
+    value: ${{ steps.setup-macports.outputs.variants-conf-path }}
+
+  sources-conf-path:
+    description: 'Path to the sources.conf file'
+    value: ${{ steps.setup-macports.outputs.sources-conf-path }}
+
+  ports-conf-path:
+    description: 'Path to the ports.conf file'
+    value: ${{ steps.setup-macports.outputs.ports-conf-path }}
+
+  macports-conf-path:
+    description: 'Path to the macports.conf file'
+    value: ${{ steps.setup-macports.outputs.macports-conf-path }}
+
+  configured-variants:
+    description: 'Configured variants (as they appear in variants.conf)'
+    value: ${{ steps.setup-macports.outputs.configured-variants }}
+
+  configured-sources:
+    description: 'Configured sources (as they appear in sources.conf)'
+    value: ${{ steps.setup-macports.outputs.configured-sources }}
+
+  git-source-path:
+    description: 'Path to local git sources (only when using git sources)'
+    value: ${{ steps.setup-macports.outputs.git-source-path }}
+
+  rsync-source-urls:
+    description: 'Rsync source URL (only when using rsync sources)'
+    value: ${{ steps.setup-macports.outputs.rsync-source-urls }}
+
 runs:
   using: 'node20'
   main: 'dist/index.js'

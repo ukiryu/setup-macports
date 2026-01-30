@@ -194,3 +194,68 @@ jobs:
           echo "Version: ${{ steps.platform.outputs.version }}"
           echo "Architecture: ${{ steps.platform.outputs.arch }}"
           echo "Runner: ${{ matrix.runner }}"
+
+  # Test configuration outputs
+  test-outputs:
+    name: Configuration Outputs
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup MacPorts with variants and git sources
+        id: setup
+        uses: ./
+        with:
+          macports-version: '2.11.5'
+          variants: '+aqua +metal -x11'
+          use-git-sources: 'true'
+
+      - name: Verify all outputs
+        run: |
+          echo "=== Basic Outputs ==="
+          echo "Version: ${{ steps.setup.outputs.version }}"
+          echo "Prefix: ${{ steps.setup.outputs.prefix }}"
+          echo "Package URL: ${{ steps.setup.outputs.package-url }}"
+          echo "Cache Key: ${{ steps.setup.outputs.cache-key }}"
+          echo "Uses Git Sources: ${{ steps.setup.outputs.uses-git-sources }}"
+          echo ""
+          echo "=== Configuration Paths ==="
+          echo "Variants Conf: ${{ steps.setup.outputs.variants-conf-path }}"
+          echo "Sources Conf: ${{ steps.setup.outputs.sources-conf-path }}"
+          echo "Ports Conf: ${{ steps.setup.outputs.ports-conf-path }}"
+          echo "MacPorts Conf: ${{ steps.setup.outputs.macports-conf-path }}"
+          echo ""
+          echo "=== Configuration Values ==="
+          echo "Configured Variants: ${{ steps.setup.outputs.configured-variants }}"
+          echo "Configured Sources: ${{ steps.setup.outputs.configured-sources }}"
+          echo ""
+          echo "=== Source Locations ==="
+          echo "Git Source Path: ${{ steps.setup.outputs.git-source-path }}"
+          echo "Rsync Source URLs: ${{ steps.setup.outputs.rsync-source-urls }}"
+
+      - name: Verify configuration files exist
+        run: |
+          # Verify all configuration files exist at output paths
+          test -f "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
+          test -f "${{ steps.setup.outputs.sources-conf-path }}" || exit 1
+          test -f "${{ steps.setup.outputs.macports-conf-path }}" || exit 1
+          # Verify git source path exists
+          test -d "${{ steps.setup.outputs.git-source-path }}" || exit 1
+          # Verify variants content
+          grep -q '+aqua' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
+          grep -q '+metal' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
+          grep -q '-x11' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
+          echo "✅ All configuration outputs verified"
