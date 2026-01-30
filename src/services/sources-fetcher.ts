@@ -20,7 +20,7 @@ export class SourcesFetcher {
    * 1. git init
    * 2. git remote add origin <url>
    * 3. git fetch --depth=1 origin <ref>
-   * 4. git checkout FETCH_HEAD
+   * 4. git checkout -b <ref> origin/<ref>
    *
    * @param targetDir - Target directory for the repository
    * @param ref - Git ref to fetch (default: 'master')
@@ -65,9 +65,9 @@ export class SourcesFetcher {
         cwd: finalPath
       })
 
-      // Checkout FETCH_HEAD (same as actions/checkout)
-      core.debug(`git checkout FETCH_HEAD`)
-      await this.execUtil.exec('git', ['checkout', 'FETCH_HEAD'], {
+      // Create and checkout local branch (not detached HEAD)
+      core.debug(`git checkout -b ${ref} origin/${ref}`)
+      await this.execUtil.exec('git', ['checkout', '-b', ref, `origin/${ref}`], {
         silent: true,
         cwd: finalPath
       })
