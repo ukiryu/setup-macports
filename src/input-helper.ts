@@ -144,9 +144,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   // Validate prefix
   // Check if it's an absolute path
   if (!path.isAbsolute(prefix)) {
-    throw new Error(
-      `installation-prefix must be an absolute path: "${prefix}"`
-    )
+    throw new Error(`installation-prefix must be an absolute path: "${prefix}"`)
   }
 
   // Check for spaces or special characters that might cause issues
@@ -227,7 +225,10 @@ export async function getInputs(): Promise<IMacPortsSettings> {
 
   // Parse skip-signature-check (space-separated package names)
   const signatureSkipPackages = skipSignatureCheckInput
-    ? skipSignatureCheckInput.trim().split(/\s+/).filter(p => p !== '')
+    ? skipSignatureCheckInput
+        .trim()
+        .split(/\s+/)
+        .filter(p => p !== '')
     : []
 
   return {

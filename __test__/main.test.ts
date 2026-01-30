@@ -28,7 +28,8 @@ describe('main orchestration', () => {
       useGitSources: true,
       sourcesProvider: 'auto',
       gitRepository: 'macports/macports-ports',
-      rsyncUrl: 'rsync://rsync.macports.org/macports/release/tarballs/ports.tar',
+      rsyncUrl:
+        'rsync://rsync.macports.org/macports/release/tarballs/ports.tar',
       prependPath: true,
       verbose: false,
       signatureCheck: 'strict',

@@ -128,7 +128,10 @@ export class MacPortsConfigurator {
       // Use local git sources as default
       lines.push(`file://${gitSourcesPath}/ [default]`)
       core.debug(`Using git sources from: ${gitSourcesPath}`)
-    } else if (settings.sourcesProvider === 'custom' && settings.sources.length > 0) {
+    } else if (
+      settings.sourcesProvider === 'custom' &&
+      settings.sources.length > 0
+    ) {
       // Use custom sources (for 'custom' provider)
       lines = [...settings.sources]
       core.debug(`Using custom sources: ${settings.sources.join(', ')}`)

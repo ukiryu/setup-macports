@@ -29,7 +29,12 @@ import {
 /**
  * Re-export types for convenience
  */
-export type {IPlatformInfo, IMacPortsInstallInfo, IConfigurationInfo, ESourcesProvider}
+export type {
+  IPlatformInfo,
+  IMacPortsInstallInfo,
+  IConfigurationInfo,
+  ESourcesProvider
+}
 export type {IVariantConfig, IPortConfig}
 
 /**
