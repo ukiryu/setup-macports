@@ -10,7 +10,9 @@ inputs:
 
   installation-prefix:
     description: >-
-      Installation prefix (currently only /opt/local is supported)
+      Installation prefix path for MacPorts.
+      Default: /opt/local
+      WARNING: Custom prefixes are experimental. Most MacPorts ports assume /opt/local and may not work correctly with a custom prefix.
     default: '/opt/local'
     required: false
 

@@ -368,3 +368,47 @@ jobs:
             grep -q "signature_check no" /opt/local/etc/macports/macports.conf || exit 1
             echo "✅ Disabled mode: signature check disabled"
           fi
+
+  # Test custom prefix (experimental)
+  test-custom-prefix:
+    name: Custom Prefix (Experimental)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup MacPorts with custom prefix
+        uses: ./
+        with:
+          macports-version: '2.11.5'
+          installation-prefix: '/tmp/macports-test'
+
+      - name: Verify custom prefix installation
+        run: |
+          # Verify port binary exists at custom prefix
+          /tmp/macports-test/bin/port version || exit 1
+
+          # Verify configuration files at custom prefix
+          test -f /tmp/macports-test/etc/macports/macports.conf || exit 1
+          test -f /tmp/macports-test/etc/macports/sources.conf || exit 1
+          test -f /tmp/macports-test/etc/macports/variants.conf || exit 1
+
+          # Verify it's NOT in /opt/local
+          ! test -f /opt/local/bin/port || exit 1
+
+          # Verify prefix in macports.conf
+          grep -q "prefix /tmp/macports-test" /tmp/macports-test/etc/macports/macports.conf || exit 1
+
+          echo "✅ Custom prefix installation verified"

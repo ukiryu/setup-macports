@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import * as path from 'path'
 import type {
   IMacPortsSettings,
   IVariantConfig,
@@ -138,6 +139,28 @@ export async function getInputs(): Promise<IMacPortsSettings> {
 
   if (!prefix) {
     throw new Error('installation-prefix is required')
+  }
+
+  // Validate prefix
+  // Check if it's an absolute path
+  if (!path.isAbsolute(prefix)) {
+    throw new Error(
+      `installation-prefix must be an absolute path: "${prefix}"`
+    )
+  }
+
+  // Check for spaces or special characters that might cause issues
+  if (/\s/.test(prefix)) {
+    core.warning(
+      `installation-prefix contains spaces: "${prefix}". This may cause issues with MacPorts.`
+    )
+  }
+
+  // Warn if using custom prefix (not /opt/local)
+  if (prefix !== '/opt/local') {
+    core.warning(
+      `Using custom prefix: "${prefix}". This is experimental. Many MacPorts ports assume /opt/local and may not work correctly.`
+    )
   }
 
   // Parse variants
