@@ -100,7 +100,16 @@ export class MacPortsInstaller {
     await io.mkdirP(customPrefix)
 
     // Move all contents from /opt/local to custom prefix
-    const dirsToMove = ['bin', 'sbin', 'etc', 'lib', 'share', 'var', 'include', 'man']
+    const dirsToMove = [
+      'bin',
+      'sbin',
+      'etc',
+      'lib',
+      'share',
+      'var',
+      'include',
+      'man'
+    ]
 
     for (const dir of dirsToMove) {
       const srcPath = path.join('/opt/local', dir)
