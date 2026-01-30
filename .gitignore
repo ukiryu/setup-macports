@@ -8,10 +8,6 @@ yarn-error.log*
 lib/
 *.tsbuildinfo
 
-# NCC cache files (not to be committed)
-dist/*.cache
-dist/*.cache.js
-
 # Test coverage
 coverage/
 .nyc_output/
