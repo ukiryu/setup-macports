@@ -14,6 +14,11 @@ export interface IExecOptions {
    * Whether to run command silently (no output to console)
    */
   silent?: boolean
+
+  /**
+   * Working directory for the command
+   */
+  cwd?: string
 }
 
 /**

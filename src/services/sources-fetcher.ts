@@ -1,70 +1,76 @@
 import * as path from 'path'
 import * as core from '@actions/core'
-import * as tc from '@actions/tool-cache'
 import * as io from '@actions/io'
+import * as fs from 'fs'
+import * as fsPromises from 'fs/promises'
 import type {IExecUtil} from '../utils/exec'
 
 /**
  * Sources Fetcher Service
  *
- * Fetches the macports-ports repository via GitHub API
+ * Clones the macports-ports repository using git (same approach as actions/checkout)
  */
 export class SourcesFetcher {
   constructor(private execUtil: IExecUtil) {}
 
   /**
-   * Fetch the macports-ports repository via GitHub API
+   * Clone the macports-ports repository using git fetch
    *
-   * Downloads the repository as a tarball and extracts it to the target directory.
+   * Uses the same approach as actions/checkout:
+   * 1. git init
+   * 2. git remote add origin <url>
+   * 3. git fetch --depth=1 origin <ref>
+   * 4. git checkout FETCH_HEAD
    *
    * @param targetDir - Target directory for the repository
    * @param ref - Git ref to fetch (default: 'master')
-   * @returns Path to the extracted repository
+   * @returns Path to the cloned repository
    */
   async fetch(targetDir: string, ref: string = 'master'): Promise<string> {
     const owner = 'macports'
     const repo = 'macports-ports'
+    const repoUrl = `https://github.com/${owner}/${repo}.git`
 
-    core.info(`Fetching ${owner}/${repo} from GitHub...`)
+    core.info(`Fetching ${owner}/${repo} from GitHub (depth 1, ref: ${ref})...`)
 
     try {
-      // Download using tool-cache (handles retries, temp files)
-      const downloadUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${ref}.tar.gz`
-      core.debug(`Download URL: ${downloadUrl}`)
+      await fsPromises.mkdir(targetDir, {recursive: true})
 
-      const tarballPath = await tc.downloadTool(downloadUrl)
-
-      core.debug(`Downloaded to: ${tarballPath}`)
-
-      // Extract to temp directory
-      const tempDir = await tc.extractTar(tarballPath)
-
-      // The extracted directory will be named like 'macports-ports-master'
-      // Find the actual extracted directory by checking for entries starting with the repo name
-      const fs = await import('fs/promises')
-      const entries = await fs.readdir(tempDir)
-      const extractedDir = entries.find(e => e.startsWith(`${repo}-`))
-
-      if (!extractedDir) {
-        throw new Error(`Could not find extracted directory in ${tempDir}`)
-      }
-
-      const sourcePath = path.join(tempDir, extractedDir)
       const finalPath = path.join(targetDir, repo)
 
-      core.debug(`Source path: ${sourcePath}`)
-      core.debug(`Final path: ${finalPath}`)
+      // Remove existing directory if present
+      if (fs.existsSync(finalPath)) {
+        core.debug(`Removing existing directory: ${finalPath}`)
+        await io.rmRF(finalPath)
+      }
 
-      // Create target directory
-      await io.mkdirP(targetDir)
+      // Create directory
+      await fsPromises.mkdir(finalPath, {recursive: true})
 
-      // Move to final location
-      core.debug(`Moving ${sourcePath} to ${finalPath}`)
-      await io.mv(sourcePath, finalPath)
+      // Initialize repository (same as actions/checkout)
+      core.debug(`git init ${finalPath}`)
+      await this.execUtil.exec('git', ['init', finalPath], {silent: true})
 
-      // Clean up temp directory
-      core.debug(`Cleaning up temp directory: ${tempDir}`)
-      await io.rmRF(tempDir)
+      // Add remote
+      core.debug(`git remote add origin ${repoUrl}`)
+      await this.execUtil.exec('git', ['remote', 'add', 'origin', repoUrl], {
+        silent: true,
+        cwd: finalPath
+      })
+
+      // Fetch with depth 1 (same as actions/checkout)
+      core.debug(`git fetch --depth=1 origin ${ref}`)
+      await this.execUtil.exec('git', ['fetch', '--depth=1', 'origin', ref], {
+        silent: false,
+        cwd: finalPath
+      })
+
+      // Checkout FETCH_HEAD (same as actions/checkout)
+      core.debug(`git checkout FETCH_HEAD`)
+      await this.execUtil.exec('git', ['checkout', 'FETCH_HEAD'], {
+        silent: true,
+        cwd: finalPath
+      })
 
       core.info(`Successfully fetched ${owner}/${repo} to ${finalPath}`)
 
@@ -77,9 +83,9 @@ export class SourcesFetcher {
   }
 
   /**
-   * Initialize the PortIndex for local sources
+   * Initialize the PortIndex for local git sources
    *
-   * After fetching macports-ports, we need to run 'port index' to generate
+   * After cloning macports-ports, we need to run 'port index' to generate
    * the PortIndex file that MacPorts uses for port discovery.
    *
    * @param portsPath - Path to the ports directory
