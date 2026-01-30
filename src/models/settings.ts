@@ -28,9 +28,26 @@ export interface IMacPortsSettings {
   ports: IPortConfig[]
 
   /**
+   * @deprecated Use sourcesProvider instead
    * Use git sources from GitHub API
    */
   useGitSources: boolean
+
+  /**
+   * Port sources provider (auto, git, rsync, custom)
+   */
+  sourcesProvider: ESourcesProvider
+
+  /**
+   * Git repository for sources (for 'git' provider)
+   * Format: 'owner/repo' or full URL
+   */
+  gitRepository: string
+
+  /**
+   * Rsync URL for ports archive (for 'rsync' provider)
+   */
+  rsyncUrl: string
 
   /**
    * Add MacPorts to PATH
@@ -57,6 +74,11 @@ export interface IMacPortsSettings {
    */
   cache: boolean
 }
+
+/**
+ * Port sources provider type
+ */
+export type ESourcesProvider = 'auto' | 'git' | 'rsync' | 'custom'
 
 /**
  * Variant configuration

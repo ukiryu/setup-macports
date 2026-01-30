@@ -259,3 +259,64 @@ jobs:
           grep -q '+metal' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
           grep -q '-x11' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
           echo "✅ All configuration outputs verified"
+
+  # Test sources providers
+  test-sources-providers:
+    name: Sources Provider ${{ matrix.provider }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: ['auto', 'git', 'rsync']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup MacPorts with ${{ matrix.provider }} provider
+        uses: ./
+        with:
+          macports-version: '2.11.5'
+          sources-provider: '${{ matrix.provider }}'
+
+      - name: Verify sources configuration
+        run: |
+          # Verify MacPorts is installed
+          /opt/local/bin/port version
+
+          # Check sources.conf content
+          echo "=== sources.conf content ==="
+          cat /opt/local/etc/macports/sources.conf
+
+          # Verify provider-specific configuration
+          if [ "${{ matrix.provider }}" = "git" ]; then
+            # Git provider should have local git sources
+            grep -q "file://.*macports-ports" /opt/local/etc/macports/sources.conf || exit 1
+            # Verify git repository exists
+            [ -d /opt/local/var/macports/sources/github.com/macports/macports-ports ] || exit 1
+            echo "✅ Git provider configured correctly"
+          elif [ "${{ matrix.provider }}" = "rsync" ]; then
+            # Rsync provider should have rsync URL
+            grep -q "rsync://.*ports.tar" /opt/local/etc/macports/sources.conf || exit 1
+            echo "✅ Rsync provider configured correctly"
+          else
+            # Auto provider should have either git or rsync
+            if grep -q "file://.*macports-ports" /opt/local/etc/macports/sources.conf; then
+              echo "✅ Auto provider chose git"
+            elif grep -q "rsync://.*ports.tar" /opt/local/etc/macports/sources.conf; then
+              echo "✅ Auto provider chose rsync"
+            else
+              exit 1
+            fi
+          fi

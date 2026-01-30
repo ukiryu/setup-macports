@@ -2,7 +2,8 @@ import * as core from '@actions/core'
 import type {
   IMacPortsSettings,
   IVariantConfig,
-  IPortConfig
+  IPortConfig,
+  ESourcesProvider
 } from './models/settings'
 
 /**
@@ -118,6 +119,9 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const variantsInput = core.getInput('variants')
   const sourcesInput = core.getInput('sources')
   const useGitSourcesInput = core.getInput('use-git-sources')
+  const sourcesProviderInput = core.getInput('sources-provider')
+  const gitRepositoryInput = core.getInput('git-repository')
+  const rsyncUrlInput = core.getInput('rsync-url')
   const installPortsInput = core.getInput('install-ports')
   const prependPathInput = core.getInput('prepend-path')
   const verboseInput = core.getInput('verbose')
@@ -151,6 +155,35 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const debug = parseBooleanInput(debugInput)
   const cache = parseBooleanInput(cacheInput)
 
+  // Determine sources provider with backward compatibility
+  // Priority: sources-provider input > use-git-sources input > default (auto)
+  let sourcesProvider: ESourcesProvider
+  if (sourcesProviderInput) {
+    // Validate sources-provider input
+    const validProviders = ['auto', 'git', 'rsync', 'custom']
+    if (!validProviders.includes(sourcesProviderInput)) {
+      throw new Error(
+        `Invalid sources-provider: "${sourcesProviderInput}". Must be one of: ${validProviders.join(', ')}`
+      )
+    }
+    sourcesProvider = sourcesProviderInput as ESourcesProvider
+  } else if (useGitSourcesInput) {
+    // Backward compatibility: use-git-sources takes precedence if explicitly set
+    sourcesProvider = useGitSources ? 'git' : 'rsync'
+    core.debug(
+      `Converted use-git-sources="${useGitSourcesInput}" to sources-provider="${sourcesProvider}"`
+    )
+  } else {
+    // Default to auto (use git if available, otherwise rsync)
+    sourcesProvider = 'auto'
+  }
+
+  // Set defaults for git-repository and rsync-url
+  const gitRepository = gitRepositoryInput || 'macports/macports-ports'
+  const rsyncUrl =
+    rsyncUrlInput ||
+    'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
+
   return {
     version,
     prefix,
@@ -158,6 +191,9 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     sources,
     ports,
     useGitSources,
+    sourcesProvider,
+    gitRepository,
+    rsyncUrl,
     prependPath,
     verbose,
     signatureCheck,

@@ -110,12 +110,16 @@ export class MacPortsConfigurator {
       // Use local git sources as default
       lines.push(`file://${gitSourcesPath}/ [default]`)
       core.debug(`Using git sources from: ${gitSourcesPath}`)
-    } else if (settings.sources.length > 0) {
-      // Use custom sources
+    } else if (settings.sourcesProvider === 'custom' && settings.sources.length > 0) {
+      // Use custom sources (for 'custom' provider)
       lines = [...settings.sources]
       core.debug(`Using custom sources: ${settings.sources.join(', ')}`)
+    } else if (settings.sourcesProvider === 'rsync') {
+      // Use configured rsync URL (for 'rsync' provider)
+      lines.push(`${settings.rsyncUrl} [default]`)
+      core.debug(`Using rsync sources: ${settings.rsyncUrl}`)
     } else {
-      // Use default MacPorts rsync source
+      // Use default MacPorts rsync source (for 'auto' or 'git' when git fails)
       lines.push(
         'rsync://rsync.macports.org/macports/release/tarballs/ports.tar [default]'
       )

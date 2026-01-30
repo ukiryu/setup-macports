@@ -4,7 +4,8 @@ import * as path from 'path'
 import type {
   IMacPortsSettings,
   IVariantConfig,
-  IPortConfig
+  IPortConfig,
+  ESourcesProvider
 } from '../models/settings'
 import type {IMacPortsInstallInfo, IPlatformInfo} from '../models/install-info'
 import type {IConfigurationInfo} from '../models/configuration-info'
@@ -28,7 +29,7 @@ import {
 /**
  * Re-export types for convenience
  */
-export type {IPlatformInfo, IMacPortsInstallInfo, IConfigurationInfo}
+export type {IPlatformInfo, IMacPortsInstallInfo, IConfigurationInfo, ESourcesProvider}
 export type {IVariantConfig, IPortConfig}
 
 /**
@@ -109,12 +110,8 @@ export class MacPortsProvider {
     await this.configure()
     core.endGroup()
 
-    // Phase 6: Setup Git Sources (Optional)
-    if (this.settings.useGitSources) {
-      core.startGroup('Setting up git sources')
-      await this.setupGitSources()
-      core.endGroup()
-    }
+    // Phase 6: Setup Sources (Optional)
+    await this.setupSources()
 
     // Phase 7: Add to PATH (Optional)
     if (this.settings.prependPath) {
@@ -146,19 +143,76 @@ export class MacPortsProvider {
   }
 
   /**
+   * Setup sources based on the sourcesProvider setting
+   *
+   * Handles four modes:
+   * - 'auto': Use git if available, otherwise rsync
+   * - 'git': Use git sources from GitHub
+   * - 'rsync': Use rsync sources
+   * - 'custom': Use custom sources from 'sources' input
+   */
+  private async setupSources(): Promise<void> {
+    const provider = this.settings.sourcesProvider
+
+    core.debug(`Sources provider: ${provider}`)
+
+    // For 'auto' mode, try git first, fall back to rsync
+    if (provider === 'auto') {
+      core.startGroup('Setting up sources (auto)')
+      try {
+        await this.setupGitSources()
+      } catch (err) {
+        core.warning(
+          `Git sources failed: ${(err as any)?.message ?? err}. Falling back to rsync.`
+        )
+        // Rsync is the default, no additional setup needed
+        this.installInfo.usesGitSources = false
+      }
+      core.endGroup()
+      return
+    }
+
+    // For 'git' mode
+    if (provider === 'git') {
+      core.startGroup('Setting up git sources')
+      await this.setupGitSources()
+      core.endGroup()
+      return
+    }
+
+    // For 'rsync' and 'custom' modes
+    // Rsync is the default, custom uses the 'sources' input
+    // No additional setup needed, configurator handles it
+    this.installInfo.usesGitSources = false
+    core.info(`Using ${provider} sources (configured in sources.conf)`)
+  }
+
+  /**
    * Setup git sources from GitHub
    */
   private async setupGitSources(): Promise<void> {
+    // Parse git repository (supports 'owner/repo' or full URL)
+    const repo = this.settings.gitRepository
+    let owner: string
+
+    if (repo.includes('/')) {
+      // Format: 'owner/repo'
+      ;[owner] = repo.split('/')
+    } else {
+      // Full URL or other format - use as-is for fetch
+      owner = 'unknown'
+    }
+
     const sourcesDir = path.join(
       this.settings.prefix,
       'var',
       'macports',
       'sources',
       'github.com',
-      'macports'
+      owner
     )
 
-    core.info(`Fetching macports-ports to ${sourcesDir}...`)
+    core.info(`Fetching ${repo} to ${sourcesDir}...`)
 
     const portsPath = await this.sourcesFetcher.fetch(sourcesDir, 'master')
 

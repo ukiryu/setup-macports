@@ -35,7 +35,34 @@ inputs:
       Fetch macports/macports-ports via GitHub API for local sources.
       Automatically configures sources.conf to use the local copy.
       Set to 'false' to use rsync only.
+      DEPRECATED: Use sources-provider instead.
     default: 'true'
+    required: false
+
+  sources-provider:
+    description: >-
+      Port sources provider. Options:
+      - 'auto': Automatically choose (uses git if available, otherwise rsync)
+      - 'git': Use git sources from GitHub
+      - 'rsync': Use rsync sources
+      - 'custom': Use custom sources from 'sources' input
+      Default: 'auto'
+    default: 'auto'
+    required: false
+
+  git-repository:
+    description: >-
+      Git repository for sources (for 'git' provider).
+      Format: 'owner/repo' or full git URL.
+      Default: 'macports/macports-ports'
+    default: 'macports/macports-ports'
+    required: false
+
+  rsync-url:
+    description: >-
+      Rsync URL for ports archive (for 'rsync' provider).
+      Default: MacPorts official rsync URL
+    default: 'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
     required: false
 
   install-ports:
