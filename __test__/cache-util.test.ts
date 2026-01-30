@@ -23,7 +23,8 @@ describe('CacheUtil', () => {
     rsyncUrl: 'rsync://rsync.macports.org/macports/release/tarballs/ports.tar',
     prependPath: true,
     verbose: false,
-    signatureCheck: true,
+    signatureCheck: 'strict',
+    signatureSkipPackages: [],
     debug: false,
     cache: false,
     ...overrides

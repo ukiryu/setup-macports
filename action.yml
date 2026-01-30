@@ -86,8 +86,24 @@ inputs:
     required: false
 
   signature-check:
-    description: 'Verify package signatures during installation'
-    default: 'true'
+    description: >-
+      Signature verification mode. Options:
+      - 'strict': Verify all package signatures (default)
+      - 'permissive': Allow skipping signatures for specified packages (see skip-signature-check)
+      - 'disabled': Skip all signature checks
+      Also accepts boolean values for backward compatibility: 'true' = 'strict', 'false' = 'disabled'
+      Default: 'strict'
+    default: 'strict'
+    required: false
+
+  skip-signature-check:
+    description: >-
+      Packages or patterns to skip signature verification (for 'permissive' mode).
+      Space-separated list of package names.
+      Example: 'boehmgc rsync'
+      Note: MacPorts does not support per-package signature skipping. This is documented for future use.
+      Default: ''
+    default: ''
     required: false
 
   cache:

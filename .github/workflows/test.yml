@@ -320,3 +320,51 @@ jobs:
               exit 1
             fi
           fi
+
+  # Test signature validation modes
+  test-signature-modes:
+    name: Signature Mode ${{ matrix.mode }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: ['strict', 'disabled']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup MacPorts with ${{ matrix.mode }} signature mode
+        uses: ./
+        with:
+          macports-version: '2.11.5'
+          signature-check: '${{ matrix.mode }}'
+
+      - name: Verify signature configuration
+        run: |
+          # Verify MacPorts is installed
+          /opt/local/bin/port version
+
+          # Check macports.conf content
+          echo "=== macports.conf content ==="
+          cat /opt/local/etc/macports/macports.conf
+
+          # Verify signature_check setting
+          if [ "${{ matrix.mode }}" = "strict" ]; then
+            grep -q "signature_check yes" /opt/local/etc/macports/macports.conf || exit 1
+            echo "✅ Strict mode: signature check enabled"
+          elif [ "${{ matrix.mode }}" = "disabled" ]; then
+            grep -q "signature_check no" /opt/local/etc/macports/macports.conf || exit 1
+            echo "✅ Disabled mode: signature check disabled"
+          fi

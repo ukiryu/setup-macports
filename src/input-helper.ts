@@ -3,7 +3,8 @@ import type {
   IMacPortsSettings,
   IVariantConfig,
   IPortConfig,
-  ESourcesProvider
+  ESourcesProvider,
+  ESignatureCheck
 } from './models/settings'
 
 /**
@@ -126,6 +127,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const prependPathInput = core.getInput('prepend-path')
   const verboseInput = core.getInput('verbose')
   const signatureCheckInput = core.getInput('signature-check')
+  const skipSignatureCheckInput = core.getInput('skip-signature-check')
   const debugInput = core.getInput('debug')
   const cacheInput = core.getInput('cache')
 
@@ -151,7 +153,6 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const useGitSources = parseBooleanInput(useGitSourcesInput)
   const prependPath = parseBooleanInput(prependPathInput)
   const verbose = parseBooleanInput(verboseInput)
-  const signatureCheck = parseBooleanInput(signatureCheckInput)
   const debug = parseBooleanInput(debugInput)
   const cache = parseBooleanInput(cacheInput)
 
@@ -184,6 +185,28 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     rsyncUrlInput ||
     'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
 
+  // Parse signature-check with backward compatibility for boolean values
+  let signatureCheck: ESignatureCheck
+  if (signatureCheckInput === 'true' || signatureCheckInput === '1') {
+    signatureCheck = 'strict'
+  } else if (signatureCheckInput === 'false' || signatureCheckInput === '0') {
+    signatureCheck = 'disabled'
+  } else if (
+    signatureCheckInput === 'strict' ||
+    signatureCheckInput === 'permissive' ||
+    signatureCheckInput === 'disabled'
+  ) {
+    signatureCheck = signatureCheckInput as ESignatureCheck
+  } else {
+    // Default to strict for any unrecognized value
+    signatureCheck = 'strict'
+  }
+
+  // Parse skip-signature-check (space-separated package names)
+  const signatureSkipPackages = skipSignatureCheckInput
+    ? skipSignatureCheckInput.trim().split(/\s+/).filter(p => p !== '')
+    : []
+
   return {
     version,
     prefix,
@@ -197,6 +220,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     prependPath,
     verbose,
     signatureCheck,
+    signatureSkipPackages,
     debug,
     cache
   }

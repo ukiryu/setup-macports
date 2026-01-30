@@ -60,9 +60,18 @@ export interface IMacPortsSettings {
   verbose: boolean
 
   /**
-   * Verify package signatures
+   * Signature verification mode
+   * - 'strict': Verify all package signatures (default)
+   * - 'permissive': Skip signatures for specified packages
+   * - 'disabled': Skip all signature checks
    */
-  signatureCheck: boolean
+  signatureCheck: ESignatureCheck
+
+  /**
+   * Packages or patterns to skip signature verification (for permissive mode)
+   * Space-separated list of package names
+   */
+  signatureSkipPackages: string[]
 
   /**
    * Enable debug logging
@@ -79,6 +88,11 @@ export interface IMacPortsSettings {
  * Port sources provider type
  */
 export type ESourcesProvider = 'auto' | 'git' | 'rsync' | 'custom'
+
+/**
+ * Signature verification mode
+ */
+export type ESignatureCheck = 'strict' | 'permissive' | 'disabled'
 
 /**
  * Variant configuration
