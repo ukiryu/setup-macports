@@ -63,15 +63,19 @@ export class SourcesFetcher {
       await this.execUtil.exec('git', ['fetch', '--depth=1', 'origin', ref], {
         silent: false,
         cwd: finalPath,
-        stderrLogLevel: 'info'  // Git writes status to stderr, log as info instead of error
+        stderrLogLevel: 'info' // Git writes status to stderr, log as info instead of error
       })
 
       // Create and checkout local branch (not detached HEAD)
       core.debug(`git checkout -b ${ref} origin/${ref}`)
-      await this.execUtil.exec('git', ['checkout', '-b', ref, `origin/${ref}`], {
-        silent: true,
-        cwd: finalPath
-      })
+      await this.execUtil.exec(
+        'git',
+        ['checkout', '-b', ref, `origin/${ref}`],
+        {
+          silent: true,
+          cwd: finalPath
+        }
+      )
 
       core.info(`Successfully fetched ${owner}/${repo} to ${finalPath}`)
 

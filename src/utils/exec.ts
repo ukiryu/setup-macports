@@ -82,7 +82,12 @@ export class ExecUtil implements IExecUtil {
     args: string[] = [],
     options: IExecOptions = {}
   ): Promise<IExecResult> {
-    const {silent = false, ignoreReturnCode = false, stderrLogLevel = 'error', ...execOptions} = options
+    const {
+      silent = false,
+      ignoreReturnCode = false,
+      stderrLogLevel = 'error',
+      ...execOptions
+    } = options
 
     core.debug(`Executing: ${command} ${args.join(' ')}`)
 
