@@ -24,6 +24,8 @@ export class MacPortsInstaller {
     settings: IMacPortsSettings,
     packageUrl: string
   ): Promise<void> {
+    const customPrefix = settings.prefix !== '/opt/local'
+
     core.info('Downloading MacPorts installer...')
 
     // Download the PKG
@@ -60,6 +62,12 @@ export class MacPortsInstaller {
       )
     }
 
+    // If using custom prefix, move installation from /opt/local to custom prefix
+    if (customPrefix) {
+      core.info(`Moving installation to custom prefix: ${settings.prefix}`)
+      await this.moveToCustomPrefix(settings.prefix)
+    }
+
     core.info('MacPorts installed successfully')
 
     // Fix ownership to current user (non-critical, may fail on some runners)
@@ -78,5 +86,46 @@ export class MacPortsInstaller {
     await io.rmRF(pkgPath)
     core.debug(`Cleaning up: ${tmpPkgPath}`)
     await io.rmRF(tmpPkgPath)
+  }
+
+  /**
+   * Move MacPorts installation from /opt/local to custom prefix
+   *
+   * @param customPrefix - The custom prefix path
+   */
+  private async moveToCustomPrefix(customPrefix: string): Promise<void> {
+    core.info(`Moving MacPorts from /opt/local to ${customPrefix}`)
+
+    // Create the custom prefix directory
+    await io.mkdirP(customPrefix)
+
+    // Move all contents from /opt/local to custom prefix
+    const dirsToMove = ['bin', 'sbin', 'etc', 'lib', 'share', 'var', 'include', 'man']
+
+    for (const dir of dirsToMove) {
+      const srcPath = path.join('/opt/local', dir)
+      const destPath = path.join(customPrefix, dir)
+
+      if (fs.existsSync(srcPath)) {
+        core.debug(`Moving ${srcPath} to ${destPath}`)
+        await this.execUtil.execSudo('mv', [srcPath, destPath], {silent: true})
+      }
+    }
+
+    // Move any remaining files (including hidden files)
+    const remainingFiles = fs.readdirSync('/opt/local')
+    for (const file of remainingFiles) {
+      if (dirsToMove.includes(file)) continue
+
+      const srcPath = path.join('/opt/local', file)
+      const destPath = path.join(customPrefix, file)
+
+      if (fs.existsSync(srcPath)) {
+        core.debug(`Moving ${srcPath} to ${destPath}`)
+        await this.execUtil.execSudo('mv', [srcPath, destPath], {silent: true})
+      }
+    }
+
+    core.info(`Successfully moved MacPorts to ${customPrefix}`)
   }
 }
