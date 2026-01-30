@@ -36,4 +36,3 @@ _temp/
 # Environment
 .env
 .env.local
-*.cache
