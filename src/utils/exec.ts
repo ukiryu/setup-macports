@@ -19,6 +19,12 @@ export interface IExecOptions {
    * Working directory for the command
    */
   cwd?: string
+
+  /**
+   * Log level for stderr output ('error', 'warning', 'info', 'debug')
+   * Default is 'error'
+   */
+  stderrLogLevel?: 'error' | 'warning' | 'info' | 'debug'
 }
 
 /**
@@ -76,12 +82,30 @@ export class ExecUtil implements IExecUtil {
     args: string[] = [],
     options: IExecOptions = {}
   ): Promise<IExecResult> {
-    const {silent = false, ignoreReturnCode = false, ...execOptions} = options
+    const {silent = false, ignoreReturnCode = false, stderrLogLevel = 'error', ...execOptions} = options
 
     core.debug(`Executing: ${command} ${args.join(' ')}`)
 
     let stdout = ''
     let stderr = ''
+
+    // Helper function to log stderr at the specified level
+    const logStderr = (message: string) => {
+      switch (stderrLogLevel) {
+        case 'error':
+          core.error(message)
+          break
+        case 'warning':
+          core.warning(message)
+          break
+        case 'info':
+          core.info(message)
+          break
+        case 'debug':
+          core.debug(message)
+          break
+      }
+    }
 
     const listeners: exec.ExecListeners = {
       stdout: (data: Buffer) => {
@@ -95,7 +119,7 @@ export class ExecUtil implements IExecUtil {
         const text = data.toString()
         stderr += text
         if (!silent) {
-          core.error(text.trim())
+          logStderr(text.trim())
         }
       }
     }
