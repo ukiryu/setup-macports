@@ -263,6 +263,7 @@ jobs:
           grep -q '+metal' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
           grep -q '-x11' "${{ steps.setup.outputs.variants-conf-path }}" || exit 1
           echo "✅ All configuration outputs verified"
+          # Note: ports.conf is optional and not created by default
 
   # Test sources providers
   test-sources-providers:
