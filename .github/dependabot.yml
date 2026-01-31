@@ -1,0 +1,28 @@
+---
+version: 2
+
+updates:
+- package-ecosystem: "npm"
+  directory: "/"
+  schedule:
+    interval: "monthly"
+  groups:
+    patch-npm-dependencies:
+      # NPM: Only group patch updates
+      update-types: [patch]
+  ignore:
+    # Ignore major updates for now to avoid breaking changes
+    - dependency-name: "*"
+      update-types: [major, minor]
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "monthly"
+  groups:
+    patch-actions-dependencies:
+      # GitHub Actions: Only group patch updates
+      update-types: [patch]
+  ignore:
+    # Ignore major updates for now to avoid breaking changes
+    - dependency-name: "*"
+      update-types: [major, minor]

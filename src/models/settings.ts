@@ -5,53 +5,94 @@ export interface IMacPortsSettings {
   /**
    * MacPorts version to install
    */
-  version: string;
+  version: string
 
   /**
    * Installation prefix path
    */
-  prefix: string;
+  prefix: string
 
   /**
    * Variant configuration
    */
-  variants: IVariantConfig;
+  variants: IVariantConfig
 
   /**
    * Custom sources URLs
    */
-  sources: string[];
+  sources: string[]
 
   /**
    * Ports to install
    */
-  ports: IPortConfig[];
+  ports: IPortConfig[]
 
   /**
+   * @deprecated Use sourcesProvider instead
    * Use git sources from GitHub API
    */
-  useGitSources: boolean;
+  useGitSources: boolean
+
+  /**
+   * Port sources provider (auto, git, rsync, custom)
+   */
+  sourcesProvider: ESourcesProvider
+
+  /**
+   * Git repository for sources (for 'git' provider)
+   * Format: 'owner/repo' or full URL
+   */
+  gitRepository: string
+
+  /**
+   * Rsync URL for ports archive (for 'rsync' provider)
+   */
+  rsyncUrl: string
 
   /**
    * Add MacPorts to PATH
    */
-  prependPath: boolean;
+  prependPath: boolean
 
   /**
    * Enable verbose output
    */
-  verbose: boolean;
+  verbose: boolean
 
   /**
-   * Verify package signatures
+   * Signature verification mode
+   * - 'strict': Verify all package signatures (default)
+   * - 'permissive': Skip signatures for specified packages
+   * - 'disabled': Skip all signature checks
    */
-  signatureCheck: boolean;
+  signatureCheck: ESignatureCheck
+
+  /**
+   * Packages or patterns to skip signature verification (for permissive mode)
+   * Space-separated list of package names
+   */
+  signatureSkipPackages: string[]
 
   /**
    * Enable debug logging
    */
-  debug: boolean;
+  debug: boolean
+
+  /**
+   * Enable caching of MacPorts installation
+   */
+  cache: boolean
 }
+
+/**
+ * Port sources provider type
+ */
+export type ESourcesProvider = 'auto' | 'git' | 'rsync' | 'custom'
+
+/**
+ * Signature verification mode
+ */
+export type ESignatureCheck = 'strict' | 'permissive' | 'disabled'
 
 /**
  * Variant configuration
@@ -60,12 +101,12 @@ export interface IVariantConfig {
   /**
    * Selected variants (with + prefix)
    */
-  select: string[];
+  select: string[]
 
   /**
    * Deselected variants (with - prefix)
    */
-  deselect: string[];
+  deselect: string[]
 }
 
 /**
@@ -75,10 +116,10 @@ export interface IPortConfig {
   /**
    * Port name
    */
-  name: string;
+  name: string
 
   /**
    * Variants for this port (e.g., "+tcl +universal -java")
    */
-  variants?: string;
+  variants?: string
 }

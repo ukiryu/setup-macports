@@ -1,102 +1,116 @@
-import * as path from 'path';
-import * as core from '@actions/core';
-import * as tc from '@actions/tool-cache';
-import * as io from '@actions/io';
-import type { IExecUtil } from '../utils/exec';
+import * as path from 'path'
+import * as core from '@actions/core'
+import * as io from '@actions/io'
+import * as fs from 'fs'
+import * as fsPromises from 'fs/promises'
+import type {IExecUtil} from '../utils/exec'
 
 /**
  * Sources Fetcher Service
  *
- * Fetches the macports-ports repository via GitHub API
+ * Clones the macports-ports repository using git (same approach as actions/checkout)
  */
 export class SourcesFetcher {
   constructor(private execUtil: IExecUtil) {}
 
   /**
-   * Fetch the macports-ports repository via GitHub API
+   * Clone the macports-ports repository using git fetch
    *
-   * Downloads the repository as a tarball and extracts it to the target directory.
+   * Uses the same approach as actions/checkout:
+   * 1. git init
+   * 2. git remote add origin <url>
+   * 3. git fetch --depth=1 origin <ref>
+   * 4. git checkout -b <ref> origin/<ref>
    *
    * @param targetDir - Target directory for the repository
    * @param ref - Git ref to fetch (default: 'master')
-   * @returns Path to the extracted repository
+   * @returns Path to the cloned repository
    */
   async fetch(targetDir: string, ref: string = 'master'): Promise<string> {
-    const owner = 'macports';
-    const repo = 'macports-ports';
+    const owner = 'macports'
+    const repo = 'macports-ports'
+    const repoUrl = `https://github.com/${owner}/${repo}.git`
 
-    core.info(`Fetching ${owner}/${repo} from GitHub...`);
+    core.info(`Fetching ${owner}/${repo} from GitHub (depth 1, ref: ${ref})...`)
 
     try {
-      // Download using tool-cache (handles retries, temp files)
-      const downloadUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${ref}.tar.gz`;
-      core.debug(`Download URL: ${downloadUrl}`);
+      await fsPromises.mkdir(targetDir, {recursive: true})
 
-      const tarballPath = await tc.downloadTool(downloadUrl);
+      const finalPath = path.join(targetDir, repo)
 
-      core.debug(`Downloaded to: ${tarballPath}`);
-
-      // Extract to temp directory
-      const tempDir = await tc.extractTar(tarballPath);
-
-      // The extracted directory will be named like 'macports-ports-master'
-      // Find the actual extracted directory by checking for entries starting with the repo name
-      const fs = await import('fs/promises');
-      const entries = await fs.readdir(tempDir);
-      const extractedDir = entries.find(e => e.startsWith(`${repo}-`));
-
-      if (!extractedDir) {
-        throw new Error(`Could not find extracted directory in ${tempDir}`);
+      // Remove existing directory if present
+      if (fs.existsSync(finalPath)) {
+        core.debug(`Removing existing directory: ${finalPath}`)
+        await io.rmRF(finalPath)
       }
 
-      const sourcePath = path.join(tempDir, extractedDir);
-      const finalPath = path.join(targetDir, repo);
+      // Create directory
+      await fsPromises.mkdir(finalPath, {recursive: true})
 
-      core.debug(`Source path: ${sourcePath}`);
-      core.debug(`Final path: ${finalPath}`);
+      // Initialize repository (same as actions/checkout)
+      core.debug(`git init ${finalPath}`)
+      await this.execUtil.exec('git', ['init', finalPath], {silent: true})
 
-      // Create target directory
-      await io.mkdirP(targetDir);
+      // Add remote
+      core.debug(`git remote add origin ${repoUrl}`)
+      await this.execUtil.exec('git', ['remote', 'add', 'origin', repoUrl], {
+        silent: true,
+        cwd: finalPath
+      })
 
-      // Move to final location
-      core.debug(`Moving ${sourcePath} to ${finalPath}`);
-      await io.mv(sourcePath, finalPath);
+      // Fetch with depth 1 (same as actions/checkout)
+      core.debug(`git fetch --depth=1 origin ${ref}`)
+      await this.execUtil.exec('git', ['fetch', '--depth=1', 'origin', ref], {
+        silent: false,
+        cwd: finalPath,
+        stderrLogLevel: 'info' // Git writes status to stderr, log as info instead of error
+      })
 
-      // Clean up temp directory
-      core.debug(`Cleaning up temp directory: ${tempDir}`);
-      await io.rmRF(tempDir);
+      // Create and checkout local branch (not detached HEAD)
+      core.debug(`git checkout -b ${ref} origin/${ref}`)
+      await this.execUtil.exec(
+        'git',
+        ['checkout', '-b', ref, `origin/${ref}`],
+        {
+          silent: true,
+          cwd: finalPath
+        }
+      )
 
-      core.info(`Successfully fetched ${owner}/${repo} to ${finalPath}`);
+      core.info(`Successfully fetched ${owner}/${repo} to ${finalPath}`)
 
-      return finalPath;
+      return finalPath
     } catch (error) {
-      const err = error as any;
-      core.error(`Failed to fetch ${owner}/${repo}: ${err.message}`);
-      throw err;
+      const err = error as any
+      core.error(`Failed to fetch ${owner}/${repo}: ${err.message}`)
+      throw err
     }
   }
 
   /**
-   * Initialize the PortIndex for local sources
+   * Initialize the PortIndex for local git sources
    *
-   * After fetching macports-ports, we need to run 'port index' to generate
+   * After cloning macports-ports, we need to run 'port index' to generate
    * the PortIndex file that MacPorts uses for port discovery.
    *
    * @param portsPath - Path to the ports directory
    * @param portBinary - Path to the port command
    */
-  async initializePortIndex(portsPath: string, portBinary: string): Promise<void> {
-    core.info(`Initializing PortIndex for ${portsPath}...`);
+  async initializePortIndex(
+    portsPath: string,
+    portBinary: string
+  ): Promise<void> {
+    core.info(`Initializing PortIndex for ${portsPath}...`)
 
     try {
       await this.execUtil.exec(portBinary, ['index', portsPath], {
         silent: false
-      });
+      })
 
-      core.info(`PortIndex initialized successfully`);
+      core.info(`PortIndex initialized successfully`)
     } catch (error) {
-      const err = error as any;
-      core.warning(`Failed to initialize PortIndex: ${err.message}`);
+      const err = error as any
+      core.warning(`Failed to initialize PortIndex: ${err.message}`)
       // This is not a fatal error - MacPorts will regenerate it on sync
     }
   }

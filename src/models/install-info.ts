@@ -1,7 +1,7 @@
-import type { IPlatformInfo } from './platform-info';
+import type {IPlatformInfo} from './platform-info'
 
 // Re-export IPlatformInfo for convenience
-export type { IPlatformInfo } from './platform-info';
+export type {IPlatformInfo} from './platform-info'
 
 /**
  * MacPorts installation information
@@ -10,30 +10,35 @@ export interface IMacPortsInstallInfo {
   /**
    * The MacPorts version being installed
    */
-  version: string;
+  version: string
 
   /**
    * The installation prefix
    */
-  prefix: string;
+  prefix: string
 
   /**
    * URL of the installer package
    */
-  packageUrl: string;
+  packageUrl: string
 
   /**
    * Platform information
    */
-  platform: IPlatformInfo;
+  platform: IPlatformInfo
 
   /**
    * Whether git sources are being used
    */
-  usesGitSources: boolean;
+  usesGitSources: boolean
+
+  /**
+   * Path to local git sources (if using git sources)
+   */
+  gitSourcePath?: string
 
   /**
    * Cache key for this installation
    */
-  cacheKey: string;
+  cacheKey: string
 }

@@ -1,0 +1,30 @@
+sources:
+  npm: true
+
+allowed:
+  - 0bsd
+  - apache-2.0
+  - bsd-2-clause
+  - bsd-3-clause
+  - isc
+  - mit
+  - cc0-1.0
+  - unlicense
+  - other
+
+reviewed:
+  npm:
+    - "@actions/http-client"
+    - "@protobuf-ts/runtime"
+    - color-convert
+    - concat-map
+    - http-client
+    - json-parse-even-better-errors
+    - lodash
+    - minimist
+    - normalize-package-data
+    - rc
+    - runtime
+    - sax
+    - spdx-exceptions
+    - through

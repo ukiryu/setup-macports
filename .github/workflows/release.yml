@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.0, leave empty to use package.json version)'
+        required: false
+        type: string
+      create_release:
+        description: 'Create a GitHub Release'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "Releasing version: $VERSION"
+
+      - name: Update version in package.json
+        if: inputs.version != ''
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          npm version $VERSION --no-git-tag-version
+          git add package.json
+          git config user.email "11865+ukiryu@users.noreply.github.com"
+          git config user.name "GitHub Action"
+          git commit -m "chore: bump version to v$VERSION"
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit dist
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.email "11865+ukiryu@users.noreply.github.com"
+          git config user.name "GitHub Action"
+          git add dist
+          git commit -m "chore: build v$VERSION" || echo "No dist changes to commit"
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin main
+          git push origin "v$VERSION"
+
+      - name: Create GitHub Release
+        if: inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## Setup MacPorts v${{ steps.version.outputs.version }}
+
+            ### Changes
+
+            See [CHANGELOG.md](https://github.com/ukiryu/setup-macports/blob/main/CHANGELOG.md) for details.
+
+            ### Usage
+
+            ```yaml
+            - uses: ukiryu/setup-macports@v${{ steps.version.outputs.version }}
+              with:
+                macports-version: '2.11.5'
+            ```
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

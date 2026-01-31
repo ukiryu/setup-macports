@@ -4,9 +4,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build output
+# Build output (intermediate files only)
 lib/
-dist/
 *.tsbuildinfo
 
 # Test coverage
@@ -31,6 +30,10 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Licensed tool temporary files
+_temp/
+
 # Environment
 .env
 .env.local
+

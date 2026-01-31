@@ -10,7 +10,9 @@ inputs:
 
   installation-prefix:
     description: >-
-      Installation prefix (currently only /opt/local is supported)
+      Installation prefix path for MacPorts.
+      Default: /opt/local
+      WARNING: Custom prefixes are experimental. Most MacPorts ports assume /opt/local and may not work correctly with a custom prefix.
     default: '/opt/local'
     required: false
 
@@ -35,7 +37,34 @@ inputs:
       Fetch macports/macports-ports via GitHub API for local sources.
       Automatically configures sources.conf to use the local copy.
       Set to 'false' to use rsync only.
+      DEPRECATED: Use sources-provider instead.
     default: 'true'
+    required: false
+
+  sources-provider:
+    description: >-
+      Port sources provider. Options:
+      - 'auto': Automatically choose (uses git if available, otherwise rsync)
+      - 'git': Use git sources from GitHub
+      - 'rsync': Use rsync sources
+      - 'custom': Use custom sources from 'sources' input
+      Default: 'git'
+    default: 'git'
+    required: false
+
+  git-repository:
+    description: >-
+      Git repository for sources (for 'git' provider).
+      Format: 'owner/repo' or full git URL.
+      Default: 'macports/macports-ports'
+    default: 'macports/macports-ports'
+    required: false
+
+  rsync-url:
+    description: >-
+      Rsync URL for ports archive (for 'rsync' provider).
+      Default: MacPorts official rsync URL
+    default: 'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
     required: false
 
   install-ports:
@@ -59,8 +88,33 @@ inputs:
     required: false
 
   signature-check:
-    description: 'Verify package signatures during installation'
-    default: 'true'
+    description: >-
+      Signature verification mode. Options:
+      - 'strict': Verify all package signatures (default)
+      - 'permissive': Allow skipping signatures for specified packages (see skip-signature-check)
+      - 'disabled': Skip all signature checks
+      Also accepts boolean values for backward compatibility: 'true' = 'strict', 'false' = 'disabled'
+      Default: 'strict'
+    default: 'strict'
+    required: false
+
+  skip-signature-check:
+    description: >-
+      Packages or patterns to skip signature verification (for 'permissive' mode).
+      Space-separated list of package names.
+      Example: 'boehmgc rsync'
+      Note: MacPorts does not support per-package signature skipping. This is documented for future use.
+      Default: ''
+    default: ''
+    required: false
+
+  cache:
+    description: >-
+      Cache MacPorts installation directory for faster subsequent runs.
+      Uses actions/cache internally with automatic cache key generation.
+      Set to 'true' to enable caching.
+      Default: false
+    default: 'false'
     required: false
 
   debug:
@@ -84,6 +138,46 @@ outputs:
   cache-key:
     description: 'Cache key for this installation'
     value: ${{ steps.setup-macports.outputs.cache-key }}
+
+  cache-hit:
+    description: 'Whether the cache was hit (only when cache: true)'
+    value: ${{ steps.setup-macports.outputs.cache-hit }}
+
+  uses-git-sources:
+    description: 'Whether git sources were configured (only when use-git-sources: true)'
+    value: ${{ steps.setup-macports.outputs.uses-git-sources }}
+
+  variants-conf-path:
+    description: 'Path to the variants.conf file'
+    value: ${{ steps.setup-macports.outputs.variants-conf-path }}
+
+  sources-conf-path:
+    description: 'Path to the sources.conf file'
+    value: ${{ steps.setup-macports.outputs.sources-conf-path }}
+
+  ports-conf-path:
+    description: 'Path to the ports.conf file'
+    value: ${{ steps.setup-macports.outputs.ports-conf-path }}
+
+  macports-conf-path:
+    description: 'Path to the macports.conf file'
+    value: ${{ steps.setup-macports.outputs.macports-conf-path }}
+
+  configured-variants:
+    description: 'Configured variants (as they appear in variants.conf)'
+    value: ${{ steps.setup-macports.outputs.configured-variants }}
+
+  configured-sources:
+    description: 'Configured sources (as they appear in sources.conf)'
+    value: ${{ steps.setup-macports.outputs.configured-sources }}
+
+  git-source-path:
+    description: 'Path to local git sources (only when using git sources)'
+    value: ${{ steps.setup-macports.outputs.git-source-path }}
+
+  rsync-source-urls:
+    description: 'Rsync source URL (only when using rsync sources)'
+    value: ${{ steps.setup-macports.outputs.rsync-source-urls }}
 
 runs:
   using: 'node20'
