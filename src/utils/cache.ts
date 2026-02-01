@@ -79,9 +79,12 @@ export class CacheUtil {
     // Things applied AFTER cache restore (variants, ports) are NOT included
     const platformMajor = platform.versionNumber?.split('.')[0] || '15'
 
+    // Use resolvedVersion if available (for 'latest'), otherwise use version
+    const effectiveVersion = settings.resolvedVersion || settings.version
+
     // Cache key format: macports-{version}-{arch}-{platform}
     // This matches Homebrew's simple approach - cache the base installation only
-    const cacheKey = `macports-${settings.version}-${platform.architecture}-${platformMajor}`
+    const cacheKey = `macports-${effectiveVersion}-${platform.architecture}-${platformMajor}`
 
     core.debug(`Generated cache key: ${cacheKey}`)
 

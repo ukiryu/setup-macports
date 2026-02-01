@@ -70,12 +70,38 @@ export class MacPortsInstaller {
 
     core.info('MacPorts installed successfully')
 
-    // Fix ownership to current user (non-critical, may fail on some runners)
+    // Fix permissions BEFORE changing ownership (avoid losing execute bits)
+    core.info('Fixing file permissions...')
+
+    // Fix libexec FIRST - this contains the tclsh interpreter
+    const libexecDir = path.join(settings.prefix, 'libexec')
+    if (fs.existsSync(libexecDir)) {
+      core.info(`Fixing permissions on ${libexecDir}...`)
+      await this.execUtil.execSudo('chmod', ['-R', 'a+rX', libexecDir], {
+        silent: false
+      })
+    }
+
+    // Fix bin and sbin directories
+    const binDir = path.join(settings.prefix, 'bin')
+    const sbinDir = path.join(settings.prefix, 'sbin')
+    if (fs.existsSync(binDir)) {
+      await this.execUtil.execSudo('chmod', ['-R', 'a+rX', binDir], {
+        silent: false
+      })
+    }
+    if (fs.existsSync(sbinDir)) {
+      await this.execUtil.execSudo('chmod', ['-R', 'a+rX', sbinDir], {
+        silent: false
+      })
+    }
+
+    // Fix ownership AFTER permissions are set
     const username = process.env.USER || process.env.USERNAME || 'runner'
-    core.debug(`Fixing ownership to ${username}...`)
+    core.info(`Fixing ownership to ${username}...`)
     try {
       await this.execUtil.execSudo('chown', ['-R', username, settings.prefix], {
-        silent: true
+        silent: false
       })
     } catch (err) {
       core.warning(`Failed to fix ownership: ${(err as any)?.message ?? err}`)

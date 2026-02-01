@@ -5,6 +5,7 @@ import * as path from 'path'
 import {getInputs} from './input-helper'
 import {MacPortsProvider, cleanup} from './providers/macports-provider'
 import {PlatformDetector} from './services/platform-detector'
+import {VersionResolver} from './services/version-resolver'
 import {CacheUtil} from './utils/cache'
 
 async function run(): Promise<void> {
@@ -15,6 +16,16 @@ async function run(): Promise<void> {
     const settings = await getInputs()
 
     core.debug(`Settings: ${JSON.stringify(settings, null, 2)}`)
+
+    // Resolve version if 'latest'
+    if (settings.version.toLowerCase() === 'latest') {
+      core.startGroup('Resolving MacPorts version')
+      const resolver = new VersionResolver()
+      const resolution = await resolver.resolve(settings.version)
+      settings.resolvedVersion = resolution.version
+      core.info(`Resolved version: ${resolution.version}`)
+      core.endGroup()
+    }
 
     // Detect platform first for cache key generation
     const platformDetector = new PlatformDetector()
@@ -148,7 +159,10 @@ async function run(): Promise<void> {
           core.endGroup()
 
           // Set outputs for cached installation
-          core.setOutput('version', settings.version)
+          core.setOutput(
+            'version',
+            settings.resolvedVersion || settings.version
+          )
           core.setOutput('prefix', settings.prefix)
           core.setOutput('cache-hit', 'true')
 
