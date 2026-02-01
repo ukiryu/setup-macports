@@ -68,7 +68,7 @@ export class MacPortsProvider {
     this.cacheUtil = new CacheUtil()
 
     // Initialize install info with settings
-    this.installInfo.version = settings.version
+    this.installInfo.version = settings.resolvedVersion || settings.version
     this.installInfo.prefix = settings.prefix
   }
 
@@ -99,7 +99,7 @@ export class MacPortsProvider {
     // Save state for potential cleanup
     setInstallationPrefix(this.settings.prefix)
     setCacheKey(cacheKey)
-    setMacPortsVersion(this.settings.version)
+    setMacPortsVersion(this.settings.resolvedVersion || this.settings.version)
 
     // Phase 3: Build Package URL
     core.startGroup('Building package URL')
@@ -221,10 +221,13 @@ export class MacPortsProvider {
       owner
     )
 
-    core.info(`Fetching ${repo} to ${sourcesDir}...`)
-    core.info(`Fetching ${repo} from GitHub (depth 1, ref: master)...`)
+    // Get git ref from settings, default to 'master'
+    const gitRef = this.settings.gitRef || 'master'
 
-    const portsPath = await this.sourcesFetcher.fetch(sourcesDir, 'master')
+    core.info(`Fetching ${repo} to ${sourcesDir}...`)
+    core.info(`Fetching ${repo} from GitHub (depth 1, ref: ${gitRef})...`)
+
+    const portsPath = await this.sourcesFetcher.fetch(sourcesDir, repo, gitRef)
 
     // Store the git sources path in installInfo so configure() can use it
     // The configurator will write sources.conf during configure() call
@@ -302,7 +305,10 @@ export class MacPortsProvider {
     await this.gatherConfigurationInfo()
 
     // Basic outputs
-    core.setOutput('version', this.settings.version)
+    core.setOutput(
+      'version',
+      this.settings.resolvedVersion || this.settings.version
+    )
     core.setOutput('prefix', this.settings.prefix)
     core.setOutput('package-url', this.installInfo.packageUrl || '')
     core.setOutput('cache-key', this.installInfo.cacheKey || '')

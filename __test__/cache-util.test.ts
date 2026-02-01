@@ -36,6 +36,40 @@ describe('CacheUtil', () => {
     architecture: arch
   })
 
+  describe('generateImprovedCacheKey', () => {
+    it('generates cache key for basic settings', () => {
+      const settings = createSettings()
+      const platform = createPlatform('Sequoia', 'arm64')
+
+      const {cacheKey} = cacheUtil.generateImprovedCacheKey(settings, platform)
+
+      expect(cacheKey).toBe('macports-2.11.5-arm64-15')
+    })
+
+    it('uses resolvedVersion when available', () => {
+      const settings = createSettings({
+        version: 'latest',
+        resolvedVersion: '2.11.6'
+      })
+      const platform = createPlatform('Sequoia', 'arm64')
+
+      const {cacheKey} = cacheUtil.generateImprovedCacheKey(settings, platform)
+
+      // Cache key should contain '2.11.6', not 'latest'
+      expect(cacheKey).toBe('macports-2.11.6-arm64-15')
+    })
+
+    it('falls back to version when resolvedVersion is not set', () => {
+      const settings = createSettings({version: '2.10.0'})
+      const platform = createPlatform('Sonoma', 'x86_64')
+
+      const {cacheKey} = cacheUtil.generateImprovedCacheKey(settings, platform)
+
+      // Note: createPlatform uses versionNumber '15.0', so major is 15
+      expect(cacheKey).toBe('macports-2.10.0-x86_64-15')
+    })
+  })
+
   describe('generateCacheKey', () => {
     it('generates cache key for basic settings', () => {
       const settings = createSettings()
