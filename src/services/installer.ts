@@ -88,34 +88,35 @@ export class MacPortsInstaller {
       await this.execUtil.execSudo(
         'find',
         [settings.prefix, '-type', 'd', '-exec', 'chmod', '755', '{}', '+'],
-        {silent: true}
+        {silent: false}
       )
       // Fix files to 644
       await this.execUtil.execSudo(
         'find',
         [settings.prefix, '-type', 'f', '-exec', 'chmod', '644', '{}', '+'],
-        {silent: true}
+        {silent: false}
       )
       // Fix executables in bin/ and sbin/ to 755
       await this.execUtil.execSudo(
         'chmod',
         ['-R', '755', path.join(settings.prefix, 'bin')],
-        {silent: true}
+        {silent: false}
       )
       await this.execUtil.execSudo(
         'chmod',
         ['-R', '755', path.join(settings.prefix, 'sbin')],
-        {silent: true}
+        {silent: false}
       )
       // Fix libexec (contains tclsh and other interpreters)
       const libexecDir = path.join(settings.prefix, 'libexec')
       if (fs.existsSync(libexecDir)) {
         await this.execUtil.execSudo('chmod', ['-R', '755', libexecDir], {
-          silent: true
+          silent: false
         })
       }
     } catch (err) {
-      core.warning(`Failed to fix permissions: ${(err as any)?.message ?? err}`)
+      core.error(`Failed to fix permissions: ${(err as any)?.message ?? err}`)
+      throw err
     }
 
     // Clean up downloaded PKG files
