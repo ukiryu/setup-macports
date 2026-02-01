@@ -70,53 +70,41 @@ export class MacPortsInstaller {
 
     core.info('MacPorts installed successfully')
 
-    // Fix ownership and permissions to current user
+    // Fix permissions BEFORE changing ownership (avoid losing execute bits)
+    core.info('Fixing file permissions...')
+
+    // Fix libexec FIRST - this contains the tclsh interpreter
+    const libexecDir = path.join(settings.prefix, 'libexec')
+    if (fs.existsSync(libexecDir)) {
+      core.info(`Fixing permissions on ${libexecDir}...`)
+      await this.execUtil.execSudo('chmod', ['-R', 'a+rX', libexecDir], {
+        silent: false
+      })
+    }
+
+    // Fix bin and sbin directories
+    const binDir = path.join(settings.prefix, 'bin')
+    const sbinDir = path.join(settings.prefix, 'sbin')
+    if (fs.existsSync(binDir)) {
+      await this.execUtil.execSudo('chmod', ['-R', 'a+rX', binDir], {
+        silent: false
+      })
+    }
+    if (fs.existsSync(sbinDir)) {
+      await this.execUtil.execSudo('chmod', ['-R', 'a+rX', sbinDir], {
+        silent: false
+      })
+    }
+
+    // Fix ownership AFTER permissions are set
     const username = process.env.USER || process.env.USERNAME || 'runner'
     core.info(`Fixing ownership to ${username}...`)
     try {
       await this.execUtil.execSudo('chown', ['-R', username, settings.prefix], {
-        silent: true
+        silent: false
       })
     } catch (err) {
       core.warning(`Failed to fix ownership: ${(err as any)?.message ?? err}`)
-    }
-
-    // Fix permissions: directories 755, files 644, executables 755
-    core.info('Fixing file permissions...')
-    try {
-      // Fix directories to 755
-      await this.execUtil.execSudo(
-        'find',
-        [settings.prefix, '-type', 'd', '-exec', 'chmod', '755', '{}', '+'],
-        {silent: false}
-      )
-      // Fix files to 644
-      await this.execUtil.execSudo(
-        'find',
-        [settings.prefix, '-type', 'f', '-exec', 'chmod', '644', '{}', '+'],
-        {silent: false}
-      )
-      // Fix executables in bin/ and sbin/ to 755
-      await this.execUtil.execSudo(
-        'chmod',
-        ['-R', '755', path.join(settings.prefix, 'bin')],
-        {silent: false}
-      )
-      await this.execUtil.execSudo(
-        'chmod',
-        ['-R', '755', path.join(settings.prefix, 'sbin')],
-        {silent: false}
-      )
-      // Fix libexec (contains tclsh and other interpreters)
-      const libexecDir = path.join(settings.prefix, 'libexec')
-      if (fs.existsSync(libexecDir)) {
-        await this.execUtil.execSudo('chmod', ['-R', '755', libexecDir], {
-          silent: false
-        })
-      }
-    } catch (err) {
-      core.error(`Failed to fix permissions: ${(err as any)?.message ?? err}`)
-      throw err
     }
 
     // Clean up downloaded PKG files
