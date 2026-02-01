@@ -86,7 +86,9 @@ export class MacPortsConfigurator {
     const etcDir = path.join(settings.prefix, 'etc', 'macports')
     const confPath = path.join(etcDir, 'variants.conf')
 
-    core.debug(`Writing variants.conf to: ${confPath}`)
+    core.info(`Writing variants.conf to: ${confPath}`)
+    core.debug(`Variants select: [${settings.variants.select.join(', ')}]`)
+    core.debug(`Variants deselect: [${settings.variants.deselect.join(', ')}]`)
 
     await io.mkdirP(etcDir)
 
@@ -106,7 +108,17 @@ export class MacPortsConfigurator {
 
     await fs.writeFile(confPath, content, {mode: 0o644})
 
-    core.debug(`variants.conf written: ${content || '(empty)'}`)
+    core.info(`variants.conf written: ${content || '(empty)'}`)
+
+    // Verify the file was written correctly
+    try {
+      const writtenContent = await fs.readFile(confPath, 'utf-8')
+      core.debug(`variants.conf verification: "${writtenContent}"`)
+    } catch (err) {
+      core.error(
+        `Failed to verify variants.conf: ${(err as any)?.message ?? err}`
+      )
+    }
   }
 
   /**

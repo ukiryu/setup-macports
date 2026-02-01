@@ -70,15 +70,52 @@ export class MacPortsInstaller {
 
     core.info('MacPorts installed successfully')
 
-    // Fix ownership to current user (non-critical, may fail on some runners)
+    // Fix ownership and permissions to current user
     const username = process.env.USER || process.env.USERNAME || 'runner'
-    core.debug(`Fixing ownership to ${username}...`)
+    core.info(`Fixing ownership to ${username}...`)
     try {
       await this.execUtil.execSudo('chown', ['-R', username, settings.prefix], {
         silent: true
       })
     } catch (err) {
       core.warning(`Failed to fix ownership: ${(err as any)?.message ?? err}`)
+    }
+
+    // Fix permissions: directories 755, files 644, executables 755
+    core.info('Fixing file permissions...')
+    try {
+      // Fix directories to 755
+      await this.execUtil.execSudo(
+        'find',
+        [settings.prefix, '-type', 'd', '-exec', 'chmod', '755', '{}', '+'],
+        {silent: true}
+      )
+      // Fix files to 644
+      await this.execUtil.execSudo(
+        'find',
+        [settings.prefix, '-type', 'f', '-exec', 'chmod', '644', '{}', '+'],
+        {silent: true}
+      )
+      // Fix executables in bin/ and sbin/ to 755
+      await this.execUtil.execSudo(
+        'chmod',
+        ['-R', '755', path.join(settings.prefix, 'bin')],
+        {silent: true}
+      )
+      await this.execUtil.execSudo(
+        'chmod',
+        ['-R', '755', path.join(settings.prefix, 'sbin')],
+        {silent: true}
+      )
+      // Fix libexec (contains tclsh and other interpreters)
+      const libexecDir = path.join(settings.prefix, 'libexec')
+      if (fs.existsSync(libexecDir)) {
+        await this.execUtil.execSudo('chmod', ['-R', '755', libexecDir], {
+          silent: true
+        })
+      }
+    } catch (err) {
+      core.warning(`Failed to fix permissions: ${(err as any)?.message ?? err}`)
     }
 
     // Clean up downloaded PKG files
