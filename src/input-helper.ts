@@ -123,6 +123,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const useGitSourcesInput = core.getInput('use-git-sources')
   const sourcesProviderInput = core.getInput('sources-provider')
   const gitRepositoryInput = core.getInput('git-repository')
+  const gitRefInput = core.getInput('git-ref')
   const rsyncUrlInput = core.getInput('rsync-url')
   const installPortsInput = core.getInput('install-ports')
   const prependPathInput = core.getInput('prepend-path')
@@ -131,6 +132,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const skipSignatureCheckInput = core.getInput('skip-signature-check')
   const debugInput = core.getInput('debug')
   const cacheInput = core.getInput('cache')
+  const githubTokenInput = core.getInput('github-token')
 
   // Validate required inputs
   if (!version) {
@@ -200,8 +202,9 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     sourcesProvider = 'git'
   }
 
-  // Set defaults for git-repository and rsync-url
+  // Set defaults for git-repository, git-ref, and rsync-url
   const gitRepository = gitRepositoryInput || 'macports/macports-ports'
+  const gitRef = gitRefInput || undefined // Use undefined for default (master)
   const rsyncUrl =
     rsyncUrlInput ||
     'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
@@ -240,12 +243,14 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     useGitSources,
     sourcesProvider,
     gitRepository,
+    gitRef,
     rsyncUrl,
     prependPath,
     verbose,
     signatureCheck,
     signatureSkipPackages,
     debug,
-    cache
+    cache,
+    githubToken: githubTokenInput
   }
 }

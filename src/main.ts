@@ -5,6 +5,7 @@ import * as path from 'path'
 import {getInputs} from './input-helper'
 import {MacPortsProvider, cleanup} from './providers/macports-provider'
 import {PlatformDetector} from './services/platform-detector'
+import {VersionResolver} from './services/version-resolver'
 import {CacheUtil} from './utils/cache'
 
 async function run(): Promise<void> {
@@ -15,6 +16,16 @@ async function run(): Promise<void> {
     const settings = await getInputs()
 
     core.debug(`Settings: ${JSON.stringify(settings, null, 2)}`)
+
+    // Resolve version if 'latest'
+    if (settings.version.toLowerCase() === 'latest') {
+      core.startGroup('Resolving MacPorts version')
+      const resolver = new VersionResolver(settings.githubToken)
+      const resolution = await resolver.resolve(settings.version)
+      settings.resolvedVersion = resolution.version
+      core.info(`Resolved version: ${resolution.version}`)
+      core.endGroup()
+    }
 
     // Detect platform first for cache key generation
     const platformDetector = new PlatformDetector()
@@ -38,54 +49,95 @@ async function run(): Promise<void> {
     // Check cache first if enabled
     // Skip restore if CACHE_SAVE_ONLY is set (used by cache-setup jobs)
     const cacheSaveOnly = process.env.CACHE_SAVE_ONLY === 'true'
-    let cacheHit = false
+    let setupCacheHit = false
+    let portsCacheHit = false
     if (settings.cache) {
       core.startGroup('Cache MacPorts')
       const cacheUtil = new CacheUtil()
-      const {cacheKey, restoreKeys} = cacheUtil.generateImprovedCacheKey(
-        settings,
+
+      // Generate separate cache keys for setup and ports
+      const effectiveVersion = settings.resolvedVersion || settings.version
+      const setupCacheKey = cacheUtil.generateSetupCacheKey(
+        effectiveVersion,
         platform
       )
+      const portsCacheKey = cacheUtil.generatePortsCacheKey(settings, platform)
 
-      core.info(`Primary cache key: ${cacheKey}`)
-      core.info(`Restore keys: ${restoreKeys.map(k => `'${k}'`).join(', ')}`)
+      core.info(`Setup cache key: ${setupCacheKey}`)
+      core.info(`Ports cache key: ${portsCacheKey}`)
 
-      // Restore cache to temp location first (since /opt/local requires root)
-      const cacheTempDir = '/tmp/macports-cache'
+      // Temporary directories for restoring caches
+      const setupCacheTempDir = '/tmp/macports-setup-cache'
+      const portsCacheTempDir = '/tmp/macports-ports-cache'
+
       if (cacheSaveOnly) {
         core.info('CACHE_SAVE_ONLY is set - skipping cache restore')
       } else {
-        cacheHit =
-          (await cache.restoreCache([cacheTempDir], cacheKey, restoreKeys)) !==
+        // Restore both caches
+        setupCacheHit =
+          (await cache.restoreCache([setupCacheTempDir], setupCacheKey)) !==
           undefined
+        portsCacheHit =
+          (await cache.restoreCache([portsCacheTempDir], portsCacheKey)) !==
+          undefined
+
+        core.info(`Setup cache hit: ${setupCacheHit}`)
+        core.info(`Ports cache hit: ${portsCacheHit}`)
       }
 
-      if (cacheHit) {
-        core.info(`Cache hit found for ${cacheKey}`)
+      if (setupCacheHit) {
+        core.info('Setup cache hit found - restoring MacPorts installation')
 
         // Copy from temp to final location using sudo
-        core.startGroup('Restore cache from temp to final location')
+        core.startGroup('Restore setup cache from temp to final location')
         try {
-          core.info(`Copying ${cacheTempDir} to ${settings.prefix}...`)
+          core.info(`Copying ${setupCacheTempDir} to ${settings.prefix}...`)
+          await exec.exec('sudo', ['-n', 'mkdir', '-p', settings.prefix])
           await exec.exec('sudo', [
             '-n',
             'cp',
             '-R',
-            cacheTempDir + '/.',
+            setupCacheTempDir + '/.',
             settings.prefix
           ])
-          await exec.exec('sudo', ['-n', 'rm', '-rf', cacheTempDir])
-          core.info('Cache restored successfully')
+          await exec.exec('sudo', ['-n', 'rm', '-rf', setupCacheTempDir])
+          core.info('Setup cache restored successfully')
         } catch (error) {
           core.warning(
-            `Failed to restore cache: ${(error as any)?.message ?? error}`
+            `Failed to restore setup cache: ${(error as any)?.message ?? error}`
           )
-          cacheHit = false
+          setupCacheHit = false
         }
         core.endGroup()
 
-        if (cacheHit) {
-          core.info('MacPorts installation restored from cache')
+        if (setupCacheHit) {
+          // Restore ports cache if available
+          if (portsCacheHit) {
+            core.startGroup('Restore ports cache from temp to final location')
+            try {
+              const portsDestDir = path.join(
+                settings.prefix,
+                'var/macports/sources'
+              )
+              core.info(`Copying ${portsCacheTempDir} to ${portsDestDir}...`)
+              await exec.exec('sudo', ['-n', 'mkdir', '-p', portsDestDir])
+              await exec.exec('sudo', [
+                '-n',
+                'cp',
+                '-R',
+                portsCacheTempDir + '/.',
+                portsDestDir
+              ])
+              await exec.exec('sudo', ['-n', 'rm', '-rf', portsCacheTempDir])
+              core.info('Ports cache restored successfully')
+            } catch (error) {
+              core.warning(
+                `Failed to restore ports cache: ${(error as any)?.message ?? error}`
+              )
+              portsCacheHit = false
+            }
+            core.endGroup()
+          }
 
           // Fix permissions on restored cache
           core.startGroup('Fix permissions on restored cache')
@@ -139,6 +191,27 @@ async function run(): Promise<void> {
               '755',
               path.join(settings.prefix, 'sbin')
             ])
+            // Fix ALL bin and sbin directories recursively (e.g., libexec/macports/bin)
+            await exec.exec('sudo', [
+              '-n',
+              'find',
+              settings.prefix,
+              '-type',
+              'd',
+              '(',
+              '-name',
+              'bin',
+              '-o',
+              '-name',
+              'sbin',
+              ')',
+              '-exec',
+              'chmod',
+              '-R',
+              '755',
+              '{}',
+              ';'
+            ])
             core.info('Permissions fixed successfully')
           } catch (error) {
             core.warning(
@@ -147,24 +220,31 @@ async function run(): Promise<void> {
           }
           core.endGroup()
 
-          // Set outputs for cached installation
-          core.setOutput('version', settings.version)
-          core.setOutput('prefix', settings.prefix)
-          core.setOutput('cache-hit', 'true')
-
-          // Add to PATH if requested
-          if (settings.prependPath) {
-            core.addPath(path.join(settings.prefix, 'bin'))
-            core.addPath(path.join(settings.prefix, 'sbin'))
+          // Apply configuration for cached installation
+          // Cache contains base MacPorts + optionally synced ports
+          // Even when ports cache hits, we need to write sources.conf and variants.conf
+          core.startGroup('Applying configuration (from cache)')
+          const provider = new MacPortsProvider(settings)
+          if (portsCacheHit) {
+            // Ports are cached, but we still need to write config files
+            // Skip sync (PortIndex is already built)
+            // Skip setup sources (git sources are already cached)
+            core.info('Ports cache hit - writing config files, skipping sync')
+            await provider.configure(true, true)
+          } else {
+            // Need to configure sources and sync ports
+            core.info('Ports cache miss - configuring and syncing')
+            await provider.configure(false, false)
           }
-
           core.endGroup()
+
+          core.setOutput('cache-hit', 'true')
           core.info('MacPorts setup complete (from cache)!')
           return
         }
       }
 
-      core.info(`Cache miss for ${cacheKey}`)
+      core.info(`Setup cache miss for ${setupCacheKey}`)
       core.endGroup()
     }
 
@@ -172,52 +252,140 @@ async function run(): Promise<void> {
     const provider = new MacPortsProvider(settings)
     const installInfo = await provider.setup()
 
-    // Save cache if enabled and not a hit
-    if (settings.cache && !cacheHit) {
+    // Save cache if enabled and not a setup cache hit
+    if (settings.cache && !setupCacheHit) {
       core.startGroup('Save MacPorts cache')
       const cacheUtil = new CacheUtil()
-      const {cacheKey} = cacheUtil.generateImprovedCacheKey(settings, platform)
 
       // Set cache-hit output to false for fresh installs
       core.setOutput('cache-hit', 'false')
 
+      // Generate both cache keys
+      const effectiveVersion = settings.resolvedVersion || settings.version
+      const setupCacheKey = cacheUtil.generateSetupCacheKey(
+        effectiveVersion,
+        platform
+      )
+      const portsCacheKey = cacheUtil.generatePortsCacheKey(settings, platform)
+
+      // Save setup cache (excluding sources directory)
       try {
-        // Copy to temp location first (since /opt/local requires root to read)
-        const cacheTempDir = '/tmp/macports-cache'
+        core.startGroup('Save setup cache')
+        const setupCacheTempDir = '/tmp/macports-setup-cache'
         core.info(
-          `Copying ${settings.prefix} to ${cacheTempDir} for caching...`
+          `Copying ${settings.prefix} to ${setupCacheTempDir} for caching...`
         )
-        await exec.exec('sudo', ['-n', 'mkdir', '-p', cacheTempDir])
+        await exec.exec('sudo', ['-n', 'mkdir', '-p', setupCacheTempDir])
+
+        // Copy everything EXCEPT sources directory
         await exec.exec('sudo', [
           '-n',
-          'cp',
-          '-R',
-          settings.prefix + '/.',
-          cacheTempDir
+          'rsync',
+          '-a',
+          '--exclude=var/macports/sources/*',
+          settings.prefix + '/',
+          setupCacheTempDir + '/'
         ])
+
         // Fix ownership so current user can read it for caching
         await exec.exec('sudo', [
           '-n',
           'chown',
           '-R',
           `${process.env.USER}`,
-          cacheTempDir
+          setupCacheTempDir
         ])
 
-        await cache.saveCache([cacheTempDir], cacheKey)
-        core.info(`Cache saved with key: ${cacheKey}`)
+        await cache.saveCache([setupCacheTempDir], setupCacheKey)
+        core.info(`Setup cache saved with key: ${setupCacheKey}`)
 
         // Cleanup temp directory
-        await exec.exec('sudo', ['-n', 'rm', '-rf', cacheTempDir])
+        await exec.exec('sudo', ['-n', 'rm', '-rf', setupCacheTempDir])
+        core.endGroup()
       } catch (error) {
-        // Cache might already exist or other error - log but don't fail
-        if ((error as any)?.name === 'ReservedCacheKey') {
-          core.warning(`Cache key ${cacheKey} is reserved`)
-        } else {
-          core.warning(
-            `Failed to save cache: ${(error as any)?.message ?? error}`
+        // Handle "unable to reserve cache" error - happens when action is called
+        // multiple times in the same job with the same cache key
+        const errorMsg = String((error as any)?.message ?? error)
+        if (
+          errorMsg.includes('Unable to reserve cache') ||
+          errorMsg.includes('another job may be creating')
+        ) {
+          core.info(
+            `Setup cache ${setupCacheKey} is being saved by another process, skipping`
           )
+        } else {
+          core.warning(`Failed to save setup cache: ${errorMsg}`)
         }
+        // Cleanup temp directory on error
+        try {
+          await exec.exec('sudo', [
+            '-n',
+            'rm',
+            '-rf',
+            '/tmp/macports-setup-cache'
+          ])
+        } catch {}
+      }
+
+      // Save ports cache (only sources directory)
+      try {
+        core.startGroup('Save ports cache')
+        const portsCacheTempDir = '/tmp/macports-ports-cache'
+        const portsSourceDir = path.join(
+          settings.prefix,
+          'var/macports/sources'
+        )
+
+        core.info(
+          `Copying ${portsSourceDir} to ${portsCacheTempDir} for caching...`
+        )
+        await exec.exec('sudo', ['-n', 'mkdir', '-p', portsCacheTempDir])
+        await exec.exec('sudo', [
+          '-n',
+          'cp',
+          '-R',
+          portsSourceDir + '/.',
+          portsCacheTempDir
+        ])
+
+        // Fix ownership so current user can read it for caching
+        await exec.exec('sudo', [
+          '-n',
+          'chown',
+          '-R',
+          `${process.env.USER}`,
+          portsCacheTempDir
+        ])
+
+        await cache.saveCache([portsCacheTempDir], portsCacheKey)
+        core.info(`Ports cache saved with key: ${portsCacheKey}`)
+
+        // Cleanup temp directory
+        await exec.exec('sudo', ['-n', 'rm', '-rf', portsCacheTempDir])
+        core.endGroup()
+      } catch (error) {
+        // Handle "unable to reserve cache" error - happens when action is called
+        // multiple times in the same job with the same cache key
+        const errorMsg = String((error as any)?.message ?? error)
+        if (
+          errorMsg.includes('Unable to reserve cache') ||
+          errorMsg.includes('another job may be creating')
+        ) {
+          core.info(
+            `Ports cache ${portsCacheKey} is being saved by another process, skipping`
+          )
+        } else {
+          core.warning(`Failed to save ports cache: ${errorMsg}`)
+        }
+        // Cleanup temp directory on error
+        try {
+          await exec.exec('sudo', [
+            '-n',
+            'rm',
+            '-rf',
+            '/tmp/macports-ports-cache'
+          ])
+        } catch {}
       }
 
       core.endGroup()
@@ -226,7 +394,6 @@ async function run(): Promise<void> {
     core.info('MacPorts setup complete!')
     core.info(`Version: ${installInfo.version}`)
     core.info(`Prefix: ${installInfo.prefix}`)
-    core.info(`Cache Key: ${installInfo.cacheKey}`)
   } catch (error) {
     core.setFailed(`${(error as any)?.message ?? error}`)
   }

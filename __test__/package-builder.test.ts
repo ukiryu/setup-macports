@@ -49,6 +49,19 @@ describe('PackageBuilder', () => {
       )
     })
 
+    it('builds URL using resolvedVersion', () => {
+      const settings = createSettings('2.11.5')
+      settings.resolvedVersion = '2.11.6'
+      const platform = createPlatform('Sequoia', '15.0', 'arm64')
+
+      const url = builder.buildUrl(settings, platform)
+
+      // URL should contain '2.11.6', not '2.11.5'
+      expect(url).toBe(
+        'https://github.com/macports/macports-base/releases/download/v2.11.6/MacPorts-2.11.6-15-Sequoia.pkg'
+      )
+    })
+
     it('builds URL for macOS 14 Sonoma x86_64', () => {
       const settings = createSettings('2.10.0')
       const platform = createPlatform('Sonoma', '14.5', 'x86_64')

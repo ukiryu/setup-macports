@@ -8,6 +8,12 @@ export interface IMacPortsSettings {
   version: string
 
   /**
+   * Resolved version (after 'latest' is resolved to actual version)
+   * Only present when version input was 'latest'
+   */
+  resolvedVersion?: string
+
+  /**
    * Installation prefix path
    */
   prefix: string
@@ -43,6 +49,12 @@ export interface IMacPortsSettings {
    * Format: 'owner/repo' or full URL
    */
   gitRepository: string
+
+  /**
+   * Git ref to fetch (branch, tag, or commit)
+   * Only used when sourcesProvider is 'git'
+   */
+  gitRef?: string
 
   /**
    * Rsync URL for ports archive (for 'rsync' provider)
@@ -82,6 +94,11 @@ export interface IMacPortsSettings {
    * Enable caching of MacPorts installation
    */
   cache: boolean
+
+  /**
+   * GitHub token for API authentication
+   */
+  githubToken?: string
 }
 
 /**

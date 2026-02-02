@@ -18,11 +18,12 @@ export class MacPortsConfigurator {
    *
    * @param settings - MacPorts settings
    * @param gitSourcesPath - Optional path to local git sources
-   * @param skipRegistryInit - Skip registry initialization (for intermediate config steps)
+   * @param skipSync - Skip port sync (useful when cache already has synced ports)
    */
   async configure(
     settings: IMacPortsSettings,
-    gitSourcesPath?: string
+    gitSourcesPath?: string,
+    skipSync = false
   ): Promise<void> {
     // Write configuration files
     await this.writeMacPortsConf(settings)
@@ -33,7 +34,10 @@ export class MacPortsConfigurator {
     await this.createDirectoryStructure(settings)
 
     // Initialize the registry by running port version
-    await this.initializeRegistry(settings)
+    // Skip port sync if requested (e.g., when cache already has synced ports)
+    if (!skipSync) {
+      await this.initializeRegistry(settings)
+    }
   }
 
   /**
@@ -86,7 +90,9 @@ export class MacPortsConfigurator {
     const etcDir = path.join(settings.prefix, 'etc', 'macports')
     const confPath = path.join(etcDir, 'variants.conf')
 
-    core.debug(`Writing variants.conf to: ${confPath}`)
+    core.info(`Writing variants.conf to: ${confPath}`)
+    core.debug(`Variants select: [${settings.variants.select.join(', ')}]`)
+    core.debug(`Variants deselect: [${settings.variants.deselect.join(', ')}]`)
 
     await io.mkdirP(etcDir)
 
@@ -106,7 +112,17 @@ export class MacPortsConfigurator {
 
     await fs.writeFile(confPath, content, {mode: 0o644})
 
-    core.debug(`variants.conf written: ${content || '(empty)'}`)
+    core.info(`variants.conf written: ${content || '(empty)'}`)
+
+    // Verify the file was written correctly
+    try {
+      const writtenContent = await fs.readFile(confPath, 'utf-8')
+      core.debug(`variants.conf verification: "${writtenContent}"`)
+    } catch (err) {
+      core.error(
+        `Failed to verify variants.conf: ${(err as any)?.message ?? err}`
+      )
+    }
   }
 
   /**

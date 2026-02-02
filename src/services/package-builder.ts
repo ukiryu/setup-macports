@@ -57,9 +57,12 @@ export class PackageBuilder {
       )
     }
 
-    // Build the filename: MacPorts-{version}-{os_version}-{os_name}.pkg
-    const filename = `MacPorts-${settings.version}-${versionInfo.pkgVersion}-${versionInfo.name}.pkg`
+    // Use resolvedVersion if available (for 'latest'), otherwise use version
+    const effectiveVersion = settings.resolvedVersion || settings.version
 
-    return `https://github.com/macports/macports-base/releases/download/v${settings.version}/${filename}`
+    // Build the filename: MacPorts-{version}-{os_version}-{os_name}.pkg
+    const filename = `MacPorts-${effectiveVersion}-${versionInfo.pkgVersion}-${versionInfo.name}.pkg`
+
+    return `https://github.com/macports/macports-base/releases/download/v${effectiveVersion}/${filename}`
   }
 }

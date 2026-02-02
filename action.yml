@@ -4,8 +4,9 @@ description: 'Install and configure MacPorts on macOS runners'
 inputs:
   macports-version:
     description: >-
-      MacPorts version to install (e.g., 2.11.5, 2.10.0)
-    default: '2.11.5'
+      MacPorts version to install. Use 'latest' for the latest stable release,
+      or specify a version (e.g., 2.11.5, 2.10.0, 2.12.0-rc1)
+    default: 'latest'
     required: false
 
   installation-prefix:
@@ -60,6 +61,13 @@ inputs:
     default: 'macports/macports-ports'
     required: false
 
+  git-ref:
+    description: >-
+      Git ref to fetch (branch, tag, or commit). Only used with 'git' sources-provider.
+      Examples: 'master', 'main', 'develop', 'v2.11.0', 'abc123def'
+    default: 'master'
+    required: false
+
   rsync-url:
     description: >-
       Rsync URL for ports archive (for 'rsync' provider).
@@ -112,14 +120,22 @@ inputs:
     description: >-
       Cache MacPorts installation directory for faster subsequent runs.
       Uses actions/cache internally with automatic cache key generation.
-      Set to 'true' to enable caching.
-      Default: false
-    default: 'false'
+      Set to 'false' to disable caching.
+      Default: true
+    default: 'true'
     required: false
 
   debug:
     description: 'Enable debug logging for troubleshooting'
     default: 'false'
+    required: false
+
+  github-token:
+    description: >-
+      GitHub token for API authentication. Defaults to GITHUB_TOKEN secret.
+      Used for fetching latest MacPorts version and git sources.
+      Set to empty string to use unauthenticated requests (rate limited).
+    default: '${{ github.token }}'
     required: false
 
 outputs:

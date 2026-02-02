@@ -68,6 +68,17 @@ describe('main orchestration', () => {
       expect(mockSettings.ports[0].name).toBe('git-lfs')
     })
 
+    it('should support resolvedVersion for latest releases', () => {
+      const latestSettings = {
+        ...mockSettings,
+        version: 'latest',
+        resolvedVersion: '2.11.6'
+      }
+
+      expect(latestSettings.version).toBe('latest')
+      expect(latestSettings.resolvedVersion).toBe('2.11.6')
+    })
+
     it('should have valid platform info', () => {
       expect(mockPlatform.version).toBe('Sequoia')
       expect(mockPlatform.versionNumber).toBe('15.0')

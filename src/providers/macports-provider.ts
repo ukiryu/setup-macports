@@ -50,7 +50,7 @@ export class MacPortsProvider {
   private readonly installer: MacPortsInstaller
   private readonly configurator: MacPortsConfigurator
   private readonly sourcesFetcher: SourcesFetcher
-  private readonly portsInstaller: PortsInstaller
+  public readonly portsInstaller: PortsInstaller
   private readonly cacheUtil: CacheUtil
 
   private installInfo: Partial<IMacPortsInstallInfo> = {}
@@ -68,7 +68,7 @@ export class MacPortsProvider {
     this.cacheUtil = new CacheUtil()
 
     // Initialize install info with settings
-    this.installInfo.version = settings.version
+    this.installInfo.version = settings.resolvedVersion || settings.version
     this.installInfo.prefix = settings.prefix
   }
 
@@ -99,7 +99,7 @@ export class MacPortsProvider {
     // Save state for potential cleanup
     setInstallationPrefix(this.settings.prefix)
     setCacheKey(cacheKey)
-    setMacPortsVersion(this.settings.version)
+    setMacPortsVersion(this.settings.resolvedVersion || this.settings.version)
 
     // Phase 3: Build Package URL
     core.startGroup('Building package URL')
@@ -146,6 +146,79 @@ export class MacPortsProvider {
     await this.setOutputs()
 
     return this.installInfo as IMacPortsInstallInfo
+  }
+
+  /**
+   * Configure an existing MacPorts installation
+   *
+   * Use this when MacPorts is already installed (e.g., from cache)
+   * and you need to apply configuration (variants, sources, etc.)
+   *
+   * @param skipSync - Skip port sync (useful for cache hits where ports are already synced)
+   * @param skipSetupSources - Skip git clone (useful when ports are already in cache)
+   */
+  async configure(skipSync = false, skipSetupSources = false): Promise<void> {
+    let gitSourcesPath: string | undefined
+
+    // Setup Sources BEFORE configuration (Required for git mode)
+    // Skip if sources are already cached (Ports Cache hit)
+    if (!skipSetupSources) {
+      await this.setupSources()
+      gitSourcesPath = this.installInfo.gitSourcePath
+    } else if (this.settings.sourcesProvider === 'git') {
+      // Sources are cached, calculate git sources path for sources.conf
+      // Parse git repository (supports 'owner/repo' or full URL)
+      const repo = this.settings.gitRepository
+      let owner: string
+      let repoName: string
+
+      if (repo.includes('/')) {
+        // Format: 'owner/repo' or 'owner/repo.git'
+        const parts = repo.split('/')
+        owner = parts[0]
+        repoName = parts[1]?.replace(/\.git$/, '') || repo
+      } else {
+        // Full URL or other format - use default macports owner
+        owner = 'macports'
+        repoName = repo
+      }
+
+      // Calculate the git sources path (must match setupGitSources)
+      // Path: /opt/local/var/macports/sources/github.com/{owner}/{repo}
+      gitSourcesPath = path.join(
+        this.settings.prefix,
+        'var',
+        'macports',
+        'sources',
+        'github.com',
+        owner,
+        repoName
+      )
+    }
+
+    // Configure MacPorts (variants, sources.conf, macports.conf, port sync)
+    core.startGroup('Configuring MacPorts')
+    await this.configurator.configure(this.settings, gitSourcesPath, skipSync)
+    core.endGroup()
+
+    // Add to PATH (Optional)
+    if (this.settings.prependPath) {
+      core.addPath(path.join(this.settings.prefix, 'bin'))
+      core.addPath(path.join(this.settings.prefix, 'sbin'))
+    }
+
+    // Install Ports (Optional)
+    if (this.settings.ports.length > 0) {
+      core.startGroup('Installing ports')
+      await this.portsInstaller.install(this.settings)
+      core.endGroup()
+    }
+
+    // Mark post state
+    setIsPost()
+
+    // Set outputs
+    await this.setOutputs()
   }
 
   /**
@@ -221,10 +294,13 @@ export class MacPortsProvider {
       owner
     )
 
-    core.info(`Fetching ${repo} to ${sourcesDir}...`)
-    core.info(`Fetching ${repo} from GitHub (depth 1, ref: master)...`)
+    // Get git ref from settings, default to 'master'
+    const gitRef = this.settings.gitRef || 'master'
 
-    const portsPath = await this.sourcesFetcher.fetch(sourcesDir, 'master')
+    core.info(`Fetching ${repo} to ${sourcesDir}...`)
+    core.info(`Fetching ${repo} from GitHub (depth 1, ref: ${gitRef})...`)
+
+    const portsPath = await this.sourcesFetcher.fetch(sourcesDir, repo, gitRef)
 
     // Store the git sources path in installInfo so configure() can use it
     // The configurator will write sources.conf during configure() call
@@ -302,7 +378,10 @@ export class MacPortsProvider {
     await this.gatherConfigurationInfo()
 
     // Basic outputs
-    core.setOutput('version', this.settings.version)
+    core.setOutput(
+      'version',
+      this.settings.resolvedVersion || this.settings.version
+    )
     core.setOutput('prefix', this.settings.prefix)
     core.setOutput('package-url', this.installInfo.packageUrl || '')
     core.setOutput('cache-key', this.installInfo.cacheKey || '')

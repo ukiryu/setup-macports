@@ -23,13 +23,71 @@ export class SourcesFetcher {
    * 4. git checkout -b <ref> origin/<ref>
    *
    * @param targetDir - Target directory for the repository
+   * @param repository - Git repository in format 'owner/repo' or full URL
    * @param ref - Git ref to fetch (default: 'master')
    * @returns Path to the cloned repository
    */
-  async fetch(targetDir: string, ref: string = 'master'): Promise<string> {
-    const owner = 'macports'
-    const repo = 'macports-ports'
-    const repoUrl = `https://github.com/${owner}/${repo}.git`
+  async fetch(
+    targetDir: string,
+    repository: string,
+    ref: string = 'master'
+  ): Promise<string> {
+    // repository is in format 'owner/repo' or full URL
+    let repoUrl: string
+    let owner: string
+    let repo: string
+
+    if (repository.includes('/')) {
+      // Format: 'owner/repo' - assume GitHub
+      const [ownerName, repoName] = repository.split('/')
+      owner = ownerName
+      repo = repoName
+      repoUrl = `https://github.com/${ownerName}/${repoName}.git`
+    } else if (
+      repository.startsWith('https://') ||
+      repository.startsWith('git@')
+    ) {
+      // Full URL - use as-is
+      repoUrl = repository
+
+      // Try to extract owner/repo from URL for directory structure
+      // Only treat as GitHub if the hostname is actually github.com
+      let isGithub = false
+
+      if (repository.startsWith('https://')) {
+        try {
+          const parsed = new URL(repository)
+          // Only exact hostname match - no spoofing allowed
+          if (parsed.hostname === 'github.com') {
+            isGithub = true
+          }
+        } catch {
+          // If URL parsing fails, treat as non-GitHub
+          isGithub = false
+        }
+      } else if (repository.startsWith('git@github.com:')) {
+        // SSH URL - check exact prefix to prevent spoofing
+        isGithub = true
+      }
+
+      if (isGithub) {
+        const match = repository.match(/github\.com[/:]([^/]+)\/([^/.]+)/)
+        if (match) {
+          owner = match[1]
+          repo = match[2]
+        } else {
+          owner = 'custom'
+          repo = 'repository'
+        }
+      } else {
+        owner = 'custom'
+        repo = 'repository'
+      }
+    } else {
+      throw new Error(
+        `Invalid git repository format: "${repository}". Expected 'owner/repo' or full URL.`
+      )
+    }
 
     core.info(`Fetching ${owner}/${repo} from GitHub (depth 1, ref: ${ref})...`)
 
