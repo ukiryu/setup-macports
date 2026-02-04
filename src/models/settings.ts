@@ -34,12 +34,6 @@ export interface IMacPortsSettings {
   ports: IPortConfig[]
 
   /**
-   * @deprecated Use sourcesProvider instead
-   * Use git sources from GitHub API
-   */
-  useGitSources: boolean
-
-  /**
    * Port sources provider (auto, git, rsync, custom)
    */
   sourcesProvider: ESourcesProvider

@@ -33,15 +33,6 @@ inputs:
     default: ''
     required: false
 
-  use-git-sources:
-    description: >-
-      Fetch macports/macports-ports via GitHub API for local sources.
-      Automatically configures sources.conf to use the local copy.
-      Set to 'false' to use rsync only.
-      DEPRECATED: Use sources-provider instead.
-    default: 'true'
-    required: false
-
   sources-provider:
     description: >-
       Port sources provider. Options:
@@ -101,7 +92,6 @@ inputs:
       - 'strict': Verify all package signatures (default)
       - 'permissive': Allow skipping signatures for specified packages (see skip-signature-check)
       - 'disabled': Skip all signature checks
-      Also accepts boolean values for backward compatibility: 'true' = 'strict', 'false' = 'disabled'
       Default: 'strict'
     default: 'strict'
     required: false
