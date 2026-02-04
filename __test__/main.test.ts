@@ -25,7 +25,6 @@ describe('main orchestration', () => {
       variants: {select: ['aqua'], deselect: ['x11']},
       sources: [],
       ports: [{name: 'git-lfs'}],
-      useGitSources: true,
       sourcesProvider: 'auto',
       gitRepository: 'macports/macports-ports',
       rsyncUrl:

@@ -17,7 +17,6 @@ describe('CacheUtil', () => {
     variants: {select: [], deselect: []},
     sources: [],
     ports: [],
-    useGitSources: true,
     sourcesProvider: 'auto',
     gitRepository: 'macports/macports-ports',
     rsyncUrl: 'rsync://rsync.macports.org/macports/release/tarballs/ports.tar',

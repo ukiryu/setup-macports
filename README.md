@@ -12,7 +12,7 @@ This action installs and configures [MacPorts](https://www.macports.org/) on mac
 ## What's new
 
 - Improved caching support with automatic cache key generation
-- Support for fetching `macports/macports-ports` via GitHub API (no git dependency)
+- Flexible port sources: git (via GitHub API), rsync, or custom sources
 - Full TypeScript rewrite with comprehensive unit and integration tests
 - Support for all current macOS versions: Sonoma (14), Sequoia (15), Tahoe (26)
 - Support for both ARM64 (Apple Silicon) and Intel (x86_64) architectures
@@ -33,12 +33,6 @@ This action installs and configures [MacPorts](https://www.macports.org/) on mac
     # Example: macports-2.11.6-arm64-15
     # Default: true
     cache: 'true'
-
-    # Installation prefix path for MacPorts.
-    # Default: /opt/local
-    # WARNING: Custom prefixes are experimental. Most MacPorts ports assume
-    # /opt/local and may not work correctly with a custom prefix.
-    installation-prefix: '/opt/local'
 
     # Global variants to configure. Use +variant to enable, -variant to disable.
     # Space-separated. Example: '+aqua +metal -x11'
@@ -70,6 +64,16 @@ This action installs and configures [MacPorts](https://www.macports.org/) on mac
     # Default: master
     git-ref: 'master'
 
+    # Rsync URL for ports archive (for 'rsync' provider).
+    # Default: MacPorts official rsync URL
+    rsync-url: 'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
+
+    # GitHub token for API authentication. Used for fetching latest version
+    # and git sources to avoid rate limits. Defaults to GITHUB_TOKEN.
+    # Set to empty string to use unauthenticated requests (rate limited).
+    # Default: ${{ github.token }}
+    github-token: ${{ github.token }}
+
     # Ports to install after MacPorts is set up.
     # Simple (space-separated): 'git curl wget'
     # With variants (JSON array): '[{"name":"db48","variants":"+tcl +universal -java"}]'
@@ -84,9 +88,17 @@ This action installs and configures [MacPorts](https://www.macports.org/) on mac
     # Default: false
     verbose: 'false'
 
-    # Verify package signatures during installation
-    # Default: true
-    signature-check: 'true'
+    # Signature verification mode. Options:
+    # - 'strict': Verify all package signatures (default)
+    # - 'permissive': Allow skipping signatures for specified packages
+    # - 'disabled': Skip all signature checks
+    # Default: strict
+    signature-check: 'strict'
+
+    # Packages or patterns to skip signature verification (for 'permissive' mode).
+    # Space-separated list of package names.
+    # Default: ''
+    skip-signature-check: ''
 
     # Enable debug logging for troubleshooting
     # Default: false
@@ -101,7 +113,30 @@ This action installs and configures [MacPorts](https://www.macports.org/) on mac
 ```yaml
 - uses: ukiryu/setup-macports@v1
   # Caching is enabled by default!
+  # Uses git sources from macports/macports-ports
 ```
+
+### Port Sources Providers
+
+The action supports multiple ways to fetch the MacPorts ports tree:
+
+| Provider | Description | Use Case |
+|----------|-------------|----------|
+| `git` | Fetches via GitHub API, then clones with git | Faster, cached by GitHub, default |
+| `rsync` | Downloads tarball via rsync | Traditional method |
+| `auto` | Chooses git if available, otherwise rsync | Automatic fallback |
+| `custom` | Use your own sources from `sources` input | Local or custom sources |
+
+**Git sources (default):**
+- Uses GitHub API to fetch repository information (avoiding rate limits with `github-token`)
+- Clones the ports tree using git
+- Faster than rsync for most cases
+- Default provider: `sources-provider: 'git'`
+
+**Rsync sources:**
+- Downloads the official MacPorts ports tarball
+- Traditional, reliable method
+- Use `sources-provider: 'rsync'`
 
 #### Install a specific version
 
@@ -166,10 +201,10 @@ This action installs and configures [MacPorts](https://www.macports.org/) on mac
     rsync-url: 'rsync://mirror.example.com/macports/release/tarballs/ports.tar'
 ```
 
-#### Add additional local sources alongside git sources
+#### Add additional sources alongside git/remote sources
 
-When using git sources, you can add additional local sources. The git source
-will be marked `[default]` automatically:
+When using git or rsync sources, you can add additional local sources. The primary
+source (git or rsync) will be marked `[default]` automatically:
 
 ```yaml
 - uses: ukiryu/setup-macports@v1
@@ -180,27 +215,9 @@ will be marked `[default]` automatically:
       file:///another/local/sources
 ```
 
-**Important:** When using git sources, the git repository is automatically
-marked as `[default]`. Any additional sources you specify are added as secondary
-sources. Do not mark any of your custom sources as `[default]` or it will
-conflict with the git sources.
-
-#### Custom installation prefix (experimental)
-
-```yaml
-- uses: ukiryu/setup-macports@v1
-  with:
-    installation-prefix: '/tmp/macports-test'
-```
-
-**Warning:** Custom prefixes are experimental. Most MacPorts ports assume
-`/opt/local` and may not work correctly. Portfiles often contain hardcoded paths
-to `/opt/local` in shebangs, scripts, and configuration files.
-
-**How it works:**
-1. MacPorts PKG installer always installs to `/opt/local` (hardcoded by Apple)
-2. The action then moves the installation to your custom prefix
-3. Binaries may have hardcoded shebangs pointing to `/opt/local`
+**Important:** The git/rsync source is automatically marked as `[default]`. Any additional
+sources you specify are added as secondary sources. Do not mark any of your custom sources
+as `[default]` or it will conflict with the primary source.
 
 #### Disable caching
 
@@ -258,6 +275,31 @@ permissions:
 MacPorts ports. That permission is for publishing to GitHub Packages registry.
 Installing MacPorts ports does not interact with GitHub Packages.
 
+#### GitHub Token for API Calls
+
+The action uses the GitHub API to:
+- Fetch the latest MacPorts version when `macports-version: 'latest'` is used
+- Fetch git sources from GitHub repositories
+
+By default, the action uses `${{ github.token }}` for authenticated requests.
+This provides higher rate limits and avoids throttling.
+
+If you experience rate limiting issues, you can explicitly pass a token:
+
+```yaml
+- uses: ukiryu/setup-macports@v1
+  with:
+    github-token: ${{ github.token }}
+```
+
+To use unauthenticated requests (not recommended due to rate limits):
+
+```yaml
+- uses: ukiryu/setup-macports@v1
+  with:
+    github-token: ''
+```
+
 If your workflow performs other GitHub operations (pushing commits, creating
 releases, etc.), add the appropriate permissions for those operations.
 
@@ -270,7 +312,15 @@ releases, etc.), add the appropriate permissions for those operations.
 | `package-url` | URL of the installer package used |
 | `cache-key` | Cache key for this installation |
 | `cache-hit` | Whether the cache was hit (only when `cache: true`) |
-| `uses-git-sources` | Whether git sources were configured (only when `use-git-sources: true`) |
+| `uses-git-sources` | Whether git sources were configured |
+| `variants-conf-path` | Path to the variants.conf file |
+| `sources-conf-path` | Path to the sources.conf file |
+| `ports-conf-path` | Path to the ports.conf file |
+| `macports-conf-path` | Path to the macports.conf file |
+| `configured-variants` | Configured variants (as they appear in variants.conf) |
+| `configured-sources` | Configured sources (as they appear in sources.conf) |
+| `git-source-path` | Path to local git sources (only when using git sources) |
+| `rsync-source-urls` | Rsync source URL (only when using rsync sources) |
 
 ## Platform Support
 

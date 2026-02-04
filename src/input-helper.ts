@@ -120,7 +120,6 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const prefix = core.getInput('installation-prefix')
   const variantsInput = core.getInput('variants')
   const sourcesInput = core.getInput('sources')
-  const useGitSourcesInput = core.getInput('use-git-sources')
   const sourcesProviderInput = core.getInput('sources-provider')
   const gitRepositoryInput = core.getInput('git-repository')
   const gitRefInput = core.getInput('git-ref')
@@ -173,32 +172,22 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const ports = parseInstallPortsInput(installPortsInput)
 
   // Parse boolean inputs
-  const useGitSources = parseBooleanInput(useGitSourcesInput)
   const prependPath = parseBooleanInput(prependPathInput)
   const verbose = parseBooleanInput(verboseInput)
   const debug = parseBooleanInput(debugInput)
   const cache = parseBooleanInput(cacheInput)
 
-  // Determine sources provider with backward compatibility
-  // Priority: sources-provider input > use-git-sources input > default (git)
+  // Validate and parse sources-provider
+  const validProviders = ['auto', 'git', 'rsync', 'custom']
   let sourcesProvider: ESourcesProvider
   if (sourcesProviderInput) {
-    // Validate sources-provider input
-    const validProviders = ['auto', 'git', 'rsync', 'custom']
     if (!validProviders.includes(sourcesProviderInput)) {
       throw new Error(
         `Invalid sources-provider: "${sourcesProviderInput}". Must be one of: ${validProviders.join(', ')}`
       )
     }
     sourcesProvider = sourcesProviderInput as ESourcesProvider
-  } else if (useGitSourcesInput) {
-    // Backward compatibility: use-git-sources takes precedence if explicitly set
-    sourcesProvider = useGitSources ? 'git' : 'rsync'
-    core.debug(
-      `Converted use-git-sources="${useGitSourcesInput}" to sources-provider="${sourcesProvider}"`
-    )
   } else {
-    // Default to git
     sourcesProvider = 'git'
   }
 
@@ -209,20 +198,15 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     rsyncUrlInput ||
     'rsync://rsync.macports.org/macports/release/tarballs/ports.tar'
 
-  // Parse signature-check with backward compatibility for boolean values
+  // Parse and validate signature-check
+  const validSignatureModes = ['strict', 'permissive', 'disabled']
   let signatureCheck: ESignatureCheck
-  if (signatureCheckInput === 'true' || signatureCheckInput === '1') {
-    signatureCheck = 'strict'
-  } else if (signatureCheckInput === 'false' || signatureCheckInput === '0') {
-    signatureCheck = 'disabled'
-  } else if (
-    signatureCheckInput === 'strict' ||
-    signatureCheckInput === 'permissive' ||
-    signatureCheckInput === 'disabled'
+  if (
+    signatureCheckInput &&
+    validSignatureModes.includes(signatureCheckInput)
   ) {
     signatureCheck = signatureCheckInput as ESignatureCheck
   } else {
-    // Default to strict for any unrecognized value
     signatureCheck = 'strict'
   }
 
@@ -240,7 +224,6 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     variants,
     sources,
     ports,
-    useGitSources,
     sourcesProvider,
     gitRepository,
     gitRef,
