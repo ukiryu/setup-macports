@@ -76,6 +76,12 @@ export class MacPortsConfigurator {
         )
       }
     }
+
+    // Handle prefer_copy mode (for environments where clonefile fails)
+    if (settings.preferCopy) {
+      config.push('prefer_copy yes')
+    }
+
     config.push('')
 
     await fs.writeFile(confPath, config.join('\n'), {mode: 0o644})

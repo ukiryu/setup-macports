@@ -93,6 +93,14 @@ export interface IMacPortsSettings {
    * GitHub token for API authentication
    */
   githubToken?: string
+
+  /**
+   * Prefer copy over clonefile
+   * Set to true to disable clonefile syscall (useful on GitHub Actions)
+   * MacPorts uses clonefile for efficiency, but it can fail in containers/VMs
+   * with permission denied errors
+   */
+  preferCopy: boolean
 }
 
 /**

@@ -132,6 +132,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const debugInput = core.getInput('debug')
   const cacheInput = core.getInput('cache')
   const githubTokenInput = core.getInput('github-token')
+  const preferCopyInput = core.getInput('prefer-copy')
 
   // Validate required inputs
   if (!version) {
@@ -176,6 +177,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
   const verbose = parseBooleanInput(verboseInput)
   const debug = parseBooleanInput(debugInput)
   const cache = parseBooleanInput(cacheInput)
+  const preferCopy = parseBooleanInput(preferCopyInput)
 
   // Validate and parse sources-provider
   const validProviders = ['auto', 'git', 'rsync', 'custom']
@@ -234,6 +236,7 @@ export async function getInputs(): Promise<IMacPortsSettings> {
     signatureSkipPackages,
     debug,
     cache,
+    preferCopy,
     githubToken: githubTokenInput
   }
 }

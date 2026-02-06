@@ -120,6 +120,17 @@ inputs:
     default: 'true'
     required: false
 
+  prefer-copy:
+    description: >-
+      Prefer copy over clonefile for file operations.
+      MacPorts uses clonefile syscall for efficiency, but it can fail with
+      "permission denied" errors in containerized environments like GitHub Actions.
+      Setting this to 'true' disables clonefile and uses regular copying instead.
+      This is slower but more compatible with restricted environments.
+      Default: false
+    default: 'false'
+    required: false
+
   debug:
     description: 'Enable debug logging for troubleshooting'
     default: 'false'
