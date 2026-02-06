@@ -239,6 +239,13 @@ async function run(): Promise<void> {
           core.endGroup()
 
           core.setOutput('cache-hit', 'true')
+
+          // Add MacPorts to PATH if prependPath is enabled
+          if (settings.prependPath) {
+            core.addPath(path.join(settings.prefix, 'bin'))
+            core.addPath(path.join(settings.prefix, 'sbin'))
+          }
+
           core.info('MacPorts setup complete (from cache)!')
           return
         }
@@ -389,6 +396,12 @@ async function run(): Promise<void> {
       }
 
       core.endGroup()
+    }
+
+    // Add MacPorts to PATH if prependPath is enabled
+    if (settings.prependPath) {
+      core.addPath(path.join(settings.prefix, 'bin'))
+      core.addPath(path.join(settings.prefix, 'sbin'))
     }
 
     core.info('MacPorts setup complete!')
