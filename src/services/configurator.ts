@@ -80,12 +80,15 @@ export class MacPortsConfigurator {
     // Handle prefer_copy mode (for environments where clonefile fails)
     if (settings.preferCopy) {
       config.push('prefer_copy yes')
+      core.info('Enabling prefer_copy mode to avoid clonefile issues on GitHub Actions')
     }
 
     config.push('')
 
-    await fs.writeFile(confPath, config.join('\n'), {mode: 0o644})
+    const content = config.join('\n')
+    await fs.writeFile(confPath, content, {mode: 0o644})
 
+    core.info(`macports.conf written with prefer_copy=${settings.preferCopy ? 'yes' : 'no'}`)
     core.debug(`macports.conf written successfully`)
   }
 
