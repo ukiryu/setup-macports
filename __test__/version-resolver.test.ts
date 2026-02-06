@@ -1,21 +1,22 @@
-import {VersionResolver} from '../src/services/version-resolver'
+import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {VersionResolver} from '../src/services/version-resolver.js'
 import {getOctokit} from '@actions/github'
 
 // Mock the GitHub module
-jest.mock('@actions/github', () => ({
-  getOctokit: jest.fn()
+vi.mock('@actions/github', () => ({
+  getOctokit: vi.fn()
 }))
 
 describe('VersionResolver', () => {
   let resolver: VersionResolver
   let mockOctokit: any
-  let mockListReleases: jest.Mock
+  let mockListReleases: any
 
   beforeEach(() => {
     resolver = new VersionResolver()
 
     // Setup mock octokit
-    mockListReleases = jest.fn()
+    mockListReleases = vi.fn()
     mockOctokit = {
       rest: {
         repos: {
@@ -23,7 +24,7 @@ describe('VersionResolver', () => {
         }
       }
     }
-    ;(getOctokit as jest.Mock).mockReturnValue(mockOctokit)
+    ;(getOctokit as any).mockReturnValue(mockOctokit)
   })
 
   const createMockRelease = (

@@ -1,9 +1,9 @@
 ---
-name: wrappy
-version: 1.0.2
+name: semver
+version: 7.7.4
 type: npm
-summary: Callback wrapping utility
-homepage: https://github.com/npm/wrappy
+summary: The semantic version parser used by npm.
+homepage: 
 license: isc
 licenses:
 - sources: LICENSE

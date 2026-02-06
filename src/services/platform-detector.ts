@@ -1,7 +1,7 @@
 import * as os from 'os'
 import * as core from '@actions/core'
 import {exec} from '@actions/exec'
-import type {IPlatformInfo, IPlatformDetector} from '../models/platform-info'
+import type {IPlatformInfo, IPlatformDetector} from '../models/platform-info.js'
 
 /**
  * macOS version database

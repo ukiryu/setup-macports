@@ -2,8 +2,8 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as core from '@actions/core'
 import * as io from '@actions/io'
-import type {IMacPortsSettings} from '../models/settings'
-import type {IExecUtil} from '../utils/exec'
+import type {IMacPortsSettings} from '../models/settings.js'
+import type {IExecUtil} from '../utils/exec.js'
 
 /**
  * MacPorts Configurator Service

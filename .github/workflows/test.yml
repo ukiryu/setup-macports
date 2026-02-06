@@ -49,7 +49,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |
@@ -81,7 +81,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |
@@ -103,7 +103,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        node-version: [20.x]
+        node-version: [24.x]
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -135,7 +135,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |
@@ -201,7 +201,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |
@@ -225,7 +225,7 @@ jobs:
         with:
           macports-version: ${{ env.MACPORTS_VERSION }}
           variants: '+doc +x11 -universal'
-          use-git-sources: 'true'
+          sources-provider: 'git'
           install-ports: 'git-lfs inkscape'
 
       # Verify basic installation
@@ -321,7 +321,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |
@@ -338,7 +338,7 @@ jobs:
         with:
           macports-version: ${{ env.MACPORTS_VERSION }}
           variants: '+doc +x11 -universal'
-          use-git-sources: 'true'
+          sources-provider: 'git'
 
       - name: Test variants and git sources functionality
         run: |
@@ -474,7 +474,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |
@@ -567,7 +567,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version: 24.x
 
       - name: Install dependencies
         run: |

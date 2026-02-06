@@ -3,7 +3,7 @@ import * as core from '@actions/core'
 import * as io from '@actions/io'
 import * as fs from 'fs'
 import * as fsPromises from 'fs/promises'
-import type {IExecUtil} from '../utils/exec'
+import type {IExecUtil} from '../utils/exec.js'
 
 /**
  * Sources Fetcher Service

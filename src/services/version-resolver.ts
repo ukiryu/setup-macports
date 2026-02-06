@@ -1,6 +1,9 @@
 import * as core from '@actions/core'
 import {getOctokit} from '@actions/github'
-import type {IMacPortsRelease, IVersionResolution} from '../models/version-info'
+import type {
+  IMacPortsRelease,
+  IVersionResolution
+} from '../models/version-info.js'
 
 /**
  * Version Resolver Service

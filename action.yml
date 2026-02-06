@@ -191,5 +191,5 @@ outputs:
     value: ${{ steps.setup-macports.outputs.rsync-source-urls }}
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'

@@ -1,5 +1,5 @@
-import type {IMacPortsSettings} from '../models/settings'
-import type {IPlatformInfo} from '../models/platform-info'
+import type {IMacPortsSettings} from '../models/settings.js'
+import type {IPlatformInfo} from '../models/platform-info.js'
 
 /**
  * Known macOS versions mapping for PKG filename construction

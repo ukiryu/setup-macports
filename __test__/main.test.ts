@@ -5,6 +5,7 @@
  * These tests verify the data structures and validation logic.
  */
 
+import {describe, it, expect, beforeEach, vi} from 'vitest'
 import type {IMacPortsSettings} from '../src/models/settings'
 import type {
   IPlatformInfo,
@@ -17,7 +18,7 @@ describe('main orchestration', () => {
   let mockInstallInfo: IMacPortsInstallInfo
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
     mockSettings = {
       version: '2.11.5',

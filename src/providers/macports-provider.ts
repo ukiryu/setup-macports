@@ -6,25 +6,28 @@ import type {
   IVariantConfig,
   IPortConfig,
   ESourcesProvider
-} from '../models/settings'
-import type {IMacPortsInstallInfo, IPlatformInfo} from '../models/install-info'
-import type {IConfigurationInfo} from '../models/configuration-info'
-import type {IPlatformDetector} from '../models/platform-info'
-import type {IExecUtil} from '../utils/exec'
-import {PlatformDetector} from '../services/platform-detector'
-import {PackageBuilder} from '../services/package-builder'
-import {MacPortsInstaller} from '../services/installer'
-import {MacPortsConfigurator} from '../services/configurator'
-import {SourcesFetcher} from '../services/sources-fetcher'
-import {PortsInstaller} from '../services/ports-installer'
-import {ExecUtil} from '../utils/exec'
-import {CacheUtil} from '../utils/cache'
+} from '../models/settings.js'
+import type {
+  IMacPortsInstallInfo,
+  IPlatformInfo
+} from '../models/install-info.js'
+import type {IConfigurationInfo} from '../models/configuration-info.js'
+import type {IPlatformDetector} from '../models/platform-info.js'
+import type {IExecUtil} from '../utils/exec.js'
+import {PlatformDetector} from '../services/platform-detector.js'
+import {PackageBuilder} from '../services/package-builder.js'
+import {MacPortsInstaller} from '../services/installer.js'
+import {MacPortsConfigurator} from '../services/configurator.js'
+import {SourcesFetcher} from '../services/sources-fetcher.js'
+import {PortsInstaller} from '../services/ports-installer.js'
+import {ExecUtil} from '../utils/exec.js'
+import {CacheUtil} from '../utils/cache.js'
 import {
   setIsPost,
   setInstallationPrefix,
   setCacheKey,
   setMacPortsVersion
-} from '../state-helper'
+} from '../state-helper.js'
 
 /**
  * Re-export types for convenience

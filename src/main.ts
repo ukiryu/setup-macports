@@ -2,11 +2,11 @@ import * as cache from '@actions/cache'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as path from 'path'
-import {getInputs} from './input-helper'
-import {MacPortsProvider, cleanup} from './providers/macports-provider'
-import {PlatformDetector} from './services/platform-detector'
-import {VersionResolver} from './services/version-resolver'
-import {CacheUtil} from './utils/cache'
+import {getInputs} from './input-helper.js'
+import {MacPortsProvider, cleanup} from './providers/macports-provider.js'
+import {PlatformDetector} from './services/platform-detector.js'
+import {VersionResolver} from './services/version-resolver.js'
+import {CacheUtil} from './utils/cache.js'
 
 async function run(): Promise<void> {
   try {

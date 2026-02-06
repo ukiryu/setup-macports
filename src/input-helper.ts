@@ -6,7 +6,7 @@ import type {
   IPortConfig,
   ESourcesProvider,
   ESignatureCheck
-} from './models/settings'
+} from './models/settings.js'
 
 /**
  * Parse a boolean input from GitHub Actions

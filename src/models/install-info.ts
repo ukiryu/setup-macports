@@ -1,7 +1,7 @@
-import type {IPlatformInfo} from './platform-info'
+import type {IPlatformInfo} from './platform-info.js'
 
 // Re-export IPlatformInfo for convenience
-export type {IPlatformInfo} from './platform-info'
+export type {IPlatformInfo} from './platform-info.js'
 
 /**
  * MacPorts installation information
