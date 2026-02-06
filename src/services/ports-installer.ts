@@ -24,12 +24,6 @@ export class PortsInstaller {
 
       const args = ['install', port.name]
 
-      // Prefer copies over clonefile (GitHub Actions doesn't support clonefile)
-      // See: https://github.com/actions/runner-images/issues/1306
-      if (settings.preferCopy) {
-        args.push('-c')
-      }
-
       // Add variants if specified
       if (port.variants) {
         const variantList = port.variants.trim().split(/\s+/)
