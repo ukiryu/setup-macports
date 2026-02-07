@@ -8,7 +8,7 @@ This is a [GitHub Action](https://github.com/features/actions) that installs and
 
 ### Prerequisites
 
-- Node.js 20 or later
+- Node.js 24 or later
 - npm
 
 ### Setup
@@ -47,7 +47,7 @@ This is a [GitHub Action](https://github.com/features/actions) that installs and
 
 ### Testing
 
-Tests are written using [Jest](https://jestjs.io/). Run `npm test` to execute the test suite.
+Tests are written using [Vitest](https://vitest.dev/). Run `npm test` to execute the test suite.
 
 To run tests with coverage, use `npm run test:coverage`.
 
