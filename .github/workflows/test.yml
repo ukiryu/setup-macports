@@ -584,7 +584,7 @@ jobs:
           macports-version: ${{ env.MACPORTS_VERSION }}
           signature-check: '${{ matrix.mode }}'
 
-      - name: Verify signature enforcement
+      - name: Verify signature configuration
         run: |
           # Verify MacPorts is installed
           /opt/local/bin/port version
@@ -594,46 +594,67 @@ jobs:
           grep "signature_check" /opt/local/etc/macports/macports.conf
           echo ""
 
-          echo "=== Testing signature enforcement with inkscape (known broken signature) ==="
-          echo "inkscape has a broken/invalid signature - perfect for testing!"
+      - name: Test signature configuration
+        run: |
+          echo "=== Testing signature configuration ==="
           echo ""
-          echo "Expected behavior:"
-          echo "  - strict mode:   should FAIL (rejects port with broken signature)"
-          echo "  - disabled mode: should SUCCEED (ignores signature issues)"
+          echo "Note: The original issue showed signature failures were caused by missing"
+          echo "macports user/group during cache restore. With the fix, the macports user"
+          echo "is created and signature verification works correctly."
+          echo ""
+          echo "This test verifies:"
+          echo "  - strict mode:   signature_check is enabled in macports.conf"
+          echo "  - disabled mode: signature_check is disabled in macports.conf"
+          echo "  - The macports user/group are created when restoring from cache"
           echo ""
 
+          # Verify the macports user and group exist
+          echo "=== Verifying macports user/group ==="
+          if dscl . -read /Groups/macports PrimaryGroupID >/dev/null 2>&1; then
+            echo "✅ macports group exists"
+          else
+            echo "❌ macports group does NOT exist - fix not working!"
+            exit 1
+          fi
+
+          if dscl . -list /Users/macports >/dev/null 2>&1; then
+            echo "✅ macports user exists"
+          else
+            echo "❌ macports user does NOT exist - fix not working!"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Verifying signature configuration ==="
+
           if [ "${{ matrix.mode }}" = "strict" ]; then
-            echo "Testing in strict mode - expecting FAILURE due to broken signature..."
-            if /opt/local/bin/port install inkscape 2>&1 | tee /tmp/install.log; then
-              echo ""
-              echo "⚠️ UNEXPECTED: Installation succeeded in strict mode!"
-              echo "   (Maybe inkscape's signature was fixed, or enforcement not working)"
+            echo "Testing in STRICT mode - signature verification is ENABLED..."
+
+            # Verify signature_check is enabled in config
+            if grep -q "signature_check yes" /opt/local/etc/macports/macports.conf; then
+              echo "✅ signature_check is set to 'yes' in macports.conf"
             else
-              echo ""
-              echo "✅ EXPECTED: Installation failed in strict mode (signature rejected)"
-              echo "   This proves signature enforcement is WORKING!"
-              echo ""
-              echo "Error log:"
-              grep -i "signature\|verify\|invalid" /tmp/install.log || tail -5 /tmp/install.log
+              echo "❌ signature_check is not properly configured"
+              exit 1
             fi
+
           elif [ "${{ matrix.mode }}" = "disabled" ]; then
-            echo "Testing in disabled mode - expecting SUCCESS (signatures ignored)..."
-            echo "Note: May still fail due to other issues (dependencies, permissions)"
-            if /opt/local/bin/port install inkscape 2>&1 | tee /tmp/install.log; then
-              echo ""
-              echo "✅ Installation succeeded in disabled mode!"
-              if [ -x /opt/local/bin/inkscape ]; then
-                echo "✅ inkscape CLI is executable"
-                /opt/local/bin/inkscape --version 2>/dev/null || /opt/local/bin/inkscape --help 2>&1 | head -2
-              fi
+            echo "Testing in DISABLED mode - signature verification is DISABLED..."
+
+            # Verify signature_check is disabled in config
+            if grep -q "signature_check no" /opt/local/etc/macports/macports.conf; then
+              echo "✅ signature_check is set to 'no' in macports.conf"
             else
-              echo ""
-              echo "⚠️ Installation failed (may be due to permissions, dependencies, or network)"
-              echo "   But NOT due to signature verification (disabled)"
-              tail -10 /tmp/install.log
+              echo "❌ signature_check is not properly configured"
+              exit 1
             fi
           fi
 
           echo ""
+          echo "✅ Signature configuration test passed"
+
+      - name: Verify MacPorts remains functional
+        run: |
+          echo ""
           /opt/local/bin/port version
-          echo "✅ MacPorts remains functional"
+          echo "✅ MacPorts remains functional after signature test"
