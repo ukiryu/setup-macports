@@ -8,9 +8,13 @@ import type {IExecUtil} from '../utils/exec.js'
 /**
  * MacPorts Configurator Service
  *
- * Handles writing MacPorts configuration files
+ * Handles writing MacPorts configuration files and creating the macports
+ * user/group for privilege separation.
  */
 export class MacPortsConfigurator {
+  private static readonly MACPORTS_USER = 'macports'
+  private static readonly MACPORTS_GROUP = 'macports'
+
   constructor(private execUtil: IExecUtil) {}
 
   /**
@@ -25,6 +29,10 @@ export class MacPortsConfigurator {
     gitSourcesPath?: string,
     skipSync = false
   ): Promise<void> {
+    // Ensure macports user and group exist (required for privilege separation)
+    // This is critical when restoring from cache where postflight didn't run
+    await this.ensureMacPortsUser(settings)
+
     // Write configuration files
     await this.writeMacPortsConf(settings)
     await this.writeVariantsConf(settings)
@@ -41,6 +49,177 @@ export class MacPortsConfigurator {
   }
 
   /**
+   * Ensure the macports user and group exist.
+   *
+   * This mimics the postflight script's create_run_user function.
+   * When restoring from cache, the postflight script doesn't run, so the
+   * macports user/group won't exist unless we create them.
+   *
+   * @param settings - MacPorts settings (for home directory path)
+   */
+  private async ensureMacPortsUser(settings: IMacPortsSettings): Promise<void> {
+    const dscl = '/usr/bin/dscl'
+    const dseditgroup = '/usr/sbin/dseditgroup'
+    const user = MacPortsConfigurator.MACPORTS_USER
+    const group = MacPortsConfigurator.MACPORTS_GROUP
+
+    core.debug(`Ensuring ${user} user and ${group} group exist...`)
+
+    // Create the group if it doesn't exist
+    try {
+      const groupExists = await this.execUtil.exec(
+        dscl,
+        ['-q', '.', '-read', `/Groups/${group}`],
+        {silent: true, ignoreReturnCode: true}
+      )
+      if (groupExists.exitCode !== 0) {
+        core.info(`Creating group "${group}"`)
+        await this.execUtil.execSudo(
+          dseditgroup,
+          ['-q', '-o', 'create', group],
+          {silent: false}
+        )
+      } else {
+        core.debug(`Group "${group}" already exists`)
+      }
+    } catch (err) {
+      core.warning(
+        `Failed to check/create group: ${(err as any)?.message ?? err}`
+      )
+    }
+
+    // Create the user if it doesn't exist
+    try {
+      const userExists = await this.execUtil.exec(
+        dscl,
+        ['-q', '.', '-list', `/Users/${user}`],
+        {silent: true, ignoreReturnCode: true}
+      )
+      if (userExists.exitCode !== 0) {
+        core.info(`Creating user "${user}"`)
+
+        // Find next available UID starting from 501
+        let nextUid = 501
+        let uidFound = false
+        while (!uidFound && nextUid < 600) {
+          const result = await this.execUtil.exec(
+            dscl,
+            ['-q', '/Search', '-search', '/Users', 'UniqueID', String(nextUid)],
+            {silent: true, ignoreReturnCode: true}
+          )
+          if (result.exitCode !== 0 || result.stdout.trim() === '') {
+            uidFound = true
+          } else {
+            nextUid++
+          }
+        }
+
+        // Create user with dscl (requires sudo)
+        await this.execUtil.execSudo(
+          dscl,
+          ['-q', '.', '-create', `/Users/${user}`, 'UniqueID', String(nextUid)],
+          {silent: false}
+        )
+
+        // Remove attributes that make user visible in Users & Groups preference pane
+        // (as done in the official postflight script)
+        try {
+          await this.execUtil.execSudo(
+            dscl,
+            ['-q', '.', '-delete', `/Users/${user}`, 'AuthenticationAuthority'],
+            {silent: true, ignoreReturnCode: true}
+          )
+          await this.execUtil.execSudo(
+            dscl,
+            ['-q', '.', '-delete', `/Users/${user}`, 'PasswordPolicyOptions'],
+            {silent: true, ignoreReturnCode: true}
+          )
+          await this.execUtil.execSudo(
+            dscl,
+            [
+              '-q',
+              '.',
+              '-delete',
+              `/Users/${user}`,
+              'dsAttrTypeNative:KerberosKeys'
+            ],
+            {silent: true, ignoreReturnCode: true}
+          )
+          await this.execUtil.execSudo(
+            dscl,
+            [
+              '-q',
+              '.',
+              '-delete',
+              `/Users/${user}`,
+              'dsAttrTypeNative:ShadowHashData'
+            ],
+            {silent: true, ignoreReturnCode: true}
+          )
+        } catch {
+          // These deletions may fail on some systems, that's okay
+        }
+
+        // Set user properties
+        await this.execUtil.execSudo(
+          dscl,
+          ['-q', '.', '-create', `/Users/${user}`, 'RealName', 'MacPorts'],
+          {silent: false}
+        )
+        await this.execUtil.execSudo(
+          dscl,
+          ['-q', '.', '-create', `/Users/${user}`, 'Password', '*'],
+          {silent: false}
+        )
+
+        // Get the group's PrimaryGroupID
+        const groupResult = await this.execUtil.exec(
+          dscl,
+          ['-q', '.', '-read', `/Groups/${group}`, 'PrimaryGroupID'],
+          {silent: true}
+        )
+        const groupId = groupResult.stdout.split(':')[1]?.trim() || '1'
+        await this.execUtil.execSudo(
+          dscl,
+          ['-q', '.', '-create', `/Users/${user}`, 'PrimaryGroupID', groupId],
+          {silent: false}
+        )
+
+        // Set home directory and shell
+        const homeDir = path.join(settings.prefix, 'var', 'macports', 'home')
+        await this.execUtil.execSudo(
+          dscl,
+          ['-q', '.', '-create', `/Users/${user}`, 'NFSHomeDirectory', homeDir],
+          {silent: false}
+        )
+        await this.execUtil.execSudo(
+          dscl,
+          [
+            '-q',
+            '.',
+            '-create',
+            `/Users/${user}`,
+            'UserShell',
+            '/usr/bin/false'
+          ],
+          {silent: false}
+        )
+
+        // Create the home directory
+        await io.mkdirP(homeDir)
+
+        core.info(`User "${user}" created with UID ${nextUid}`)
+      } else {
+        core.debug(`User "${user}" already exists`)
+      }
+    } catch (err) {
+      core.warning(
+        `Failed to check/create user: ${(err as any)?.message ?? err}`
+      )
+    }
+  }
+
+  /**
    * Write macports.conf configuration file
    */
   private async writeMacPortsConf(settings: IMacPortsSettings): Promise<void> {
@@ -51,10 +230,15 @@ export class MacPortsConfigurator {
 
     await io.mkdirP(etcDir)
 
+    // Use the macports user for privilege separation
+    // This user is created by ensureMacPortsUser() above
+    const macportsUser = MacPortsConfigurator.MACPORTS_USER
+
     const config = [
       `prefix ${settings.prefix}`,
       `portdbpath ${path.join(settings.prefix, 'var', 'macports', 'portdbpath')}`,
       `sources_conf ${path.join(settings.prefix, 'etc', 'macports', 'sources.conf')}`,
+      `macportsuser ${macportsUser}`,
       ''
     ]
 
@@ -183,12 +367,26 @@ export class MacPortsConfigurator {
       path.join(settings.prefix, 'etc', 'macports'),
       path.join(settings.prefix, 'var', 'macports', 'portdbpath', 'registry'),
       path.join(settings.prefix, 'var', 'macports', 'sources'),
-      path.join(settings.prefix, 'var', 'macports', 'dist')
+      path.join(settings.prefix, 'var', 'macports', 'dist'),
+      path.join(settings.prefix, 'var', 'macports', 'home') // Home for macports user
     ]
 
     for (const dir of directories) {
       await io.mkdirP(dir)
       core.debug(`Created directory: ${dir}`)
+    }
+
+    // Set ownership of home directory to macports user
+    const homeDir = path.join(settings.prefix, 'var', 'macports', 'home')
+    try {
+      await this.execUtil.execSudo(
+        'chown',
+        ['-R', MacPortsConfigurator.MACPORTS_USER, homeDir],
+        {silent: true}
+      )
+    } catch {
+      // Non-critical if this fails
+      core.debug(`Could not set ownership on ${homeDir}`)
     }
   }
 
