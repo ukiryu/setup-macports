@@ -18,11 +18,27 @@ export class PortsInstaller {
    */
   async install(settings: IMacPortsSettings): Promise<void> {
     const portBinary = path.join(settings.prefix, 'bin', 'port')
+    const skipPackages = new Set(settings.signatureSkipPackages)
 
     for (const port of settings.ports) {
       core.info(`Installing port: ${port.name}`)
 
-      const args = ['install', port.name]
+      // Check if this port should have signature check skipped
+      const shouldSkipSignature = skipPackages.has(port.name)
+      const globalArgs: string[] = []
+
+      if (shouldSkipSignature) {
+        core.warning(
+          `Installing ${port.name} with force flag to bypass signature verification`
+        )
+        globalArgs.push('-f')
+      }
+
+      if (settings.verbose) {
+        globalArgs.push('-v')
+      }
+
+      const args = [...globalArgs, 'install', port.name]
 
       // Add variants if specified
       if (port.variants) {
@@ -32,11 +48,6 @@ export class PortsInstaller {
             args.push(variant)
           }
         }
-      }
-
-      // Add verbose flag if requested
-      if (settings.verbose) {
-        args.push('-v')
       }
 
       await this.execUtil.exec(portBinary, args, {silent: false})
