@@ -542,7 +542,7 @@ jobs:
           - runner: macos-14
             label: '14-Sonoma-ARM'
             mode: 'permissive'
-            skip-package: 'help2man'
+            skip-package: 'gdk-pixbuf2'
           # macOS 15 Sequoia (ARM64)
           - runner: macos-15
             label: '15-Sequoia-ARM'
@@ -553,7 +553,7 @@ jobs:
           - runner: macos-15
             label: '15-Sequoia-ARM'
             mode: 'permissive'
-            skip-package: 'help2man'
+            skip-package: 'gdk-pixbuf2'
           # macOS 15 Sequoia (Intel x64)
           - runner: macos-15-intel
             label: '15-Sequoia-Intel'
@@ -564,7 +564,7 @@ jobs:
           - runner: macos-15-intel
             label: '15-Sequoia-Intel'
             mode: 'permissive'
-            skip-package: 'help2man'
+            skip-package: 'gdk-pixbuf2'
           # macOS 26 Tahoe (ARM64)
           - runner: macos-26
             label: '26-Tahoe-ARM'
@@ -575,7 +575,7 @@ jobs:
           - runner: macos-26
             label: '26-Tahoe-ARM'
             mode: 'permissive'
-            skip-package: 'help2man'
+            skip-package: 'gdk-pixbuf2'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
