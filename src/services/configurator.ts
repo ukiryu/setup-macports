@@ -248,15 +248,13 @@ export class MacPortsConfigurator {
     } else if (settings.signatureCheck === 'disabled') {
       config.push('signature_check no')
     } else if (settings.signatureCheck === 'permissive') {
-      // Permissive mode: enable signature check but allow skipping for specific packages
+      // Permissive mode: enable signature check but skip for specific packages
+      // Packages in signatureSkipPackages will be installed with -f flag to bypass
       config.push('signature_check yes')
       if (settings.signatureSkipPackages.length > 0) {
-        // MacPorts doesn't have a built-in way to skip signatures for specific packages
-        // We document this as a limitation and suggest using 'port -o' for offline install
-        core.warning(
-          `Permissive mode requested for packages: ${settings.signatureSkipPackages.join(', ')}. ` +
-            'Note: MacPorts does not support per-package signature skipping. ' +
-            'Use signature-check: "disabled" to skip all signature checks, or install problematic ports with "port -o" (offline mode).'
+        core.info(
+          `Permissive signature mode enabled. ` +
+            `The following packages will be installed with force flag: ${settings.signatureSkipPackages.join(', ')}`
         )
       }
     }

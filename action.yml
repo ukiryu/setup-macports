@@ -103,10 +103,10 @@ inputs:
 
   skip-signature-check:
     description: >-
-      Packages or patterns to skip signature verification (for 'permissive' mode).
+      Packages to skip signature verification (for 'permissive' mode).
       Space-separated list of package names.
-      Example: 'boehmgc rsync'
-      Note: MacPorts does not support per-package signature skipping. This is documented for future use.
+      Example: 'gdk-pixbuf2 boehmgc rsync'
+      These packages will be installed with the force flag to bypass signature errors.
       Default: ''
     default: ''
     required: false
