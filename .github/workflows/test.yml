@@ -539,6 +539,10 @@ jobs:
           - runner: macos-14
             label: '14-Sonoma-ARM'
             mode: 'disabled'
+          - runner: macos-14
+            label: '14-Sonoma-ARM'
+            mode: 'permissive'
+            skip-package: 'help2man'
           # macOS 15 Sequoia (ARM64)
           - runner: macos-15
             label: '15-Sequoia-ARM'
@@ -546,6 +550,10 @@ jobs:
           - runner: macos-15
             label: '15-Sequoia-ARM'
             mode: 'disabled'
+          - runner: macos-15
+            label: '15-Sequoia-ARM'
+            mode: 'permissive'
+            skip-package: 'help2man'
           # macOS 15 Sequoia (Intel x64)
           - runner: macos-15-intel
             label: '15-Sequoia-Intel'
@@ -553,6 +561,10 @@ jobs:
           - runner: macos-15-intel
             label: '15-Sequoia-Intel'
             mode: 'disabled'
+          - runner: macos-15-intel
+            label: '15-Sequoia-Intel'
+            mode: 'permissive'
+            skip-package: 'help2man'
           # macOS 26 Tahoe (ARM64)
           - runner: macos-26
             label: '26-Tahoe-ARM'
@@ -560,6 +572,10 @@ jobs:
           - runner: macos-26
             label: '26-Tahoe-ARM'
             mode: 'disabled'
+          - runner: macos-26
+            label: '26-Tahoe-ARM'
+            mode: 'permissive'
+            skip-package: 'help2man'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -583,6 +599,8 @@ jobs:
         with:
           macports-version: ${{ env.MACPORTS_VERSION }}
           signature-check: '${{ matrix.mode }}'
+          skip-signature-check: '${{ matrix.skip-package }}'
+          install-ports: '${{ matrix.skip-package }}'
 
       - name: Verify signature configuration
         run: |
@@ -603,8 +621,9 @@ jobs:
           echo "is created and signature verification works correctly."
           echo ""
           echo "This test verifies:"
-          echo "  - strict mode:   signature_check is enabled in macports.conf"
-          echo "  - disabled mode: signature_check is disabled in macports.conf"
+          echo "  - strict mode:     signature_check is enabled in macports.conf"
+          echo "  - disabled mode:   signature_check is disabled in macports.conf"
+          echo "  - permissive mode: signature_check is enabled, specific packages use force flag"
           echo "  - The macports user/group are created when restoring from cache"
           echo ""
 
@@ -648,6 +667,19 @@ jobs:
               echo "❌ signature_check is not properly configured"
               exit 1
             fi
+
+          elif [ "${{ matrix.mode }}" = "permissive" ]; then
+            echo "Testing in PERMISSIVE mode - signature verification is ENABLED with force flag for skipped packages..."
+
+            # Verify signature_check is enabled in config (permissive keeps it enabled)
+            if grep -q "signature_check yes" /opt/local/etc/macports/macports.conf; then
+              echo "✅ signature_check is set to 'yes' in macports.conf"
+            else
+              echo "❌ signature_check is not properly configured"
+              exit 1
+            fi
+
+            echo "✅ Permissive mode configured - packages in skip list will use force flag"
           fi
 
           echo ""
@@ -658,3 +690,25 @@ jobs:
           echo ""
           /opt/local/bin/port version
           echo "✅ MacPorts remains functional after signature test"
+
+      - name: Verify permissive mode package installation
+        if: matrix.mode == 'permissive'
+        run: |
+          echo "=== Verifying permissive mode package installation ==="
+          echo ""
+
+          # Check that the skipped package was installed
+          if [ -n "${{ matrix.skip-package }}" ]; then
+            echo "Checking if ${{ matrix.skip-package }} was installed..."
+
+            # Verify package is installed
+            if /opt/local/bin/port installed ${{ matrix.skip-package }} 2>/dev/null | grep -q "${{ matrix.skip-package }}"; then
+              echo "✅ Package ${{ matrix.skip-package }} is installed"
+            else
+              echo "❌ Package ${{ matrix.skip-package }} was NOT installed"
+              exit 1
+            fi
+          fi
+
+          echo ""
+          echo "✅ Permissive mode package installation verified"
