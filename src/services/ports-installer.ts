@@ -50,8 +50,16 @@ export class PortsInstaller {
         }
       }
 
-      await this.execUtil.exec(portBinary, args, {silent: false})
-      core.info(`Port ${port.name} installed successfully`)
+      const result = await this.execUtil.exec(portBinary, args, {silent: false})
+
+      if (result.exitCode === 0) {
+        core.info(`Port ${port.name} installed successfully`)
+      } else {
+        core.warning(
+          `Port ${port.name} installation completed with exit code ${result.exitCode}. ` +
+            'Check logs for details.'
+        )
+      }
     }
   }
 }

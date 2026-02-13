@@ -18,11 +18,11 @@ describe('PortsInstaller', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Create mock exec utility
-    execMock = vi.fn().mockResolvedValue(undefined)
+    // Create mock exec utility that returns successful result
+    execMock = vi.fn().mockResolvedValue({exitCode: 0, stdout: '', stderr: ''})
     mockExecUtil = {
       exec: execMock,
-      execSudo: vi.fn().mockResolvedValue(undefined)
+      execSudo: vi.fn().mockResolvedValue({exitCode: 0, stdout: '', stderr: ''})
     }
 
     installer = new PortsInstaller(mockExecUtil)
