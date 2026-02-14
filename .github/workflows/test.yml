@@ -583,10 +583,10 @@ jobs:
           # For permissive mode, manually install with force flag to verify it works
           if [ "${{ matrix.mode }}" = "permissive" ]; then
             echo "Installing with force flag (-f) to bypass signature verification..."
-            /opt/local/bin/port -f install gdk-pixbuf2 2>&1 || true
+            sudo /opt/local/bin/port -f install gdk-pixbuf2 2>&1 || true
           else
             echo "Installing normally (signature check: ${{ matrix.mode }})..."
-            /opt/local/bin/port install gdk-pixbuf2 2>&1 || true
+            sudo /opt/local/bin/port install gdk-pixbuf2 2>&1 || true
           fi
         continue-on-error: true
 
