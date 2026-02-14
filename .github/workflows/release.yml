@@ -85,6 +85,14 @@ jobs:
           git push origin main
           git push origin "v$VERSION"
 
+      - name: Update major version tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          MAJOR_VERSION=$(echo "$VERSION" | cut -d. -f1)
+          git tag -f "v$MAJOR_VERSION" "v$VERSION"
+          git push origin "v$MAJOR_VERSION" --force
+          echo "Updated v$MAJOR_VERSION to point to v$VERSION"
+
       - name: Create GitHub Release
         if: inputs.create_release == 'true'
         uses: softprops/action-gh-release@v2
