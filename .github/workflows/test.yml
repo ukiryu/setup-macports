@@ -34,8 +34,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS 14 Sonoma (ARM64)
-          - runner: macos-14
           # macOS 15 Sequoia (ARM64)
           - runner: macos-15
           # macOS 15 Sequoia (Intel x64)
@@ -174,11 +172,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS 14 Sonoma (ARM64)
-          - runner: macos-14
-            label: '14-Sonoma-ARM'
-            version: '14'
-            arch: 'arm64'
           # macOS 15 Sequoia (ARM64)
           - runner: macos-15
             label: '15-Sequoia-ARM'
@@ -302,9 +295,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS 14 Sonoma (ARM64)
-          - runner: macos-14
-            label: '14-Sonoma-ARM'
           # macOS 15 Sequoia (ARM64)
           - runner: macos-15
             label: '15-Sequoia-ARM'
@@ -427,16 +417,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS 14 Sonoma (ARM64)
-          - runner: macos-14
-            label: '14-Sonoma-ARM'
-            provider: 'auto'
-          - runner: macos-14
-            label: '14-Sonoma-ARM'
-            provider: 'git'
-          - runner: macos-14
-            label: '14-Sonoma-ARM'
-            provider: 'rsync'
           # macOS 15 Sequoia (ARM64)
           - runner: macos-15
             label: '15-Sequoia-ARM'
